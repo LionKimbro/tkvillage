@@ -1,0 +1,13 @@
+{
+  "zookeep-project-guid": "c8ce10f9-8a6c-4f0c-b8e8-1dd990414ce3",
+  "name": "tkvillage",
+  "repo-type": "python-2026-03",
+  "license": "CC0-1.0",
+  "repository": {
+    "name": "tkvillage",
+    "visibility": "public"
+  },
+  "python-package": {
+    "name": "tkvillage"
+  }
+}
