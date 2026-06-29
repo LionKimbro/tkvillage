@@ -1,0 +1,104 @@
+{
+  "purpose": "TkVillage is a lightweight importable Python/Tkinter runtime for building modular GUI applications around a hidden root, summonable Toplevel windows, reducer-powered state dictionaries, queued semantic events, and a periodic tick loop. It provides the shared “host organism” for Lion-style Tkinter apps: window kind registration, singleton/per-key/free-instance window policies, target queues for windows and services, message routing, configuration, lifecycle hooks, testing support, and debug/introspection tools. The goal is not to build CIRA, a visual builder, or a heavy framework, but a small inspectable kernel that makes Tkinter programs reusable, AI-debuggable, and consistent with lions-tkinter-development-conventions.v1.",
+  "options": {
+    "encourage-questions": true,
+    "request-ack": true
+  },
+  "documents": {
+    "general-background": {
+      "selected": false,
+      "designation": "required",
+      "reason": "Read this for high-level orientation to Lion's recurring concepts, systems, and vocabulary."
+    },
+    "general-background-abbreviated": {
+      "selected": true,
+      "designation": "required",
+      "reason": "Read this for an abbreviated high-level orientation to Lion's recurring concepts, systems, and vocabulary."
+    },
+    "project-directory-system": {
+      "selected": true,
+      "designation": "required",
+      "reason": "Read this for a brief overview of how Lion's projects and repositories are organized."
+    },
+    "programming-guidelines": {
+      "selected": true,
+      "designation": "required",
+      "reason": "These are the programming guidelines that you shall implement the program with."
+    },
+    "json-document-writing": {
+      "selected": false,
+      "designation": "recommended",
+      "reason": "Read this when writing JSON documents intended for Lion's systems or for LLM consumption."
+    },
+    "json-document-writing-minimal": {
+      "selected": true,
+      "designation": "recommended",
+      "reason": "A condensed version of the JSON documentation-writing guide; read this for the essentials when the full guide is more than you need."
+    },
+    "softspec": {
+      "selected": true,
+      "designation": "recommended",
+      "reason": "Read this when specifying data structures in JSON documents; SoftSpec is the preferred approach."
+    },
+    "lionscliapp": {
+      "selected": true,
+      "designation": "required",
+      "reason": "TkVillage core must not REQUIRE lionscliapp, but TkVillage should provides a standard lionscliapp integration path because I estimate 80%-95% of use will be atop lionscliapp."
+    },
+    "machine-root": {
+      "selected": true,
+      "designation": "recommended",
+      "reason": "\"Machine Root\" is something like an environment variable system, except rather than being tied to the process, it refers to system-wide variables, and they are programmatically accessible."
+    },
+    "tkinter-conventions": {
+      "selected": true,
+      "designation": "required",
+      "reason": "These are tkinter development conventions, and the framework we are now implementing in many ways is a reification of these principles."
+    },
+    "tkintertester-reference": {
+      "selected": false,
+      "designation": "required",
+      "reason": "When you write Tkinter GUI tests, use tkintertester. Read this so that you understand the harness, its event-loop-native test model, and its rules."
+    },
+    "tkintertester-lionscliapp": {
+      "selected": false,
+      "designation": "required",
+      "reason": "When you combine tkintertester with lionscliapp, follow this integration pattern so the CLI lifecycle and Tk test lifecycle stay correctly separated."
+    },
+    "m1-core": {
+      "selected": false,
+      "designation": "required",
+      "reason": "You are going to be handling M1 data. Read this so that you understand the core structure and behavior of M1 entities and aspects."
+    },
+    "m1-transport": {
+      "selected": false,
+      "designation": "required",
+      "reason": "You are going to be storing or exchanging M1 data. Read this so that you understand its transport representation."
+    },
+    "m1-link-types": {
+      "selected": false,
+      "designation": "required",
+      "reason": "Read this when choosing link types for relationships in M1 data."
+    },
+    "m1-merging": {
+      "selected": false,
+      "designation": "required",
+      "reason": "Read this when combining M1 transport units or reasoning about merge behavior."
+    },
+    "m1-runtime": {
+      "selected": false,
+      "designation": "required",
+      "reason": "Read this so that you know how to use the M1 runtime."
+    },
+    "reducer-core-architecture": {
+      "selected": false,
+      "designation": "required",
+      "reason": "The program will use the Reducer-Core Architecture. Read this to understand the architecture and its specific terms of use."
+    },
+    "cira": {
+      "selected": true,
+      "designation": "required",
+      "reason": "Typically, we will use reducer-core architecture, per program spec.  However, there will be references to CIRA, and some times, especially if a tkinter.Toplevel makes heavy use of a tkinter.Canvas, -- the full CIRA will be used.  CIRA stands for Coordinated Interactive Runtime Architecture (CIRA). Read this so that you have an idea of what is coming for those instances."
+    }
+  }
+}

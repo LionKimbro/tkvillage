@@ -1,0 +1,658 @@
+{
+  "document": {
+    "document-id": "tkvillage.kernel.spec.v1",
+    "title": "TkVillage Kernel Specification v1",
+    "tags": [
+      "tkinter",
+      "python",
+      "framework",
+      "runtime",
+      "gui",
+      "reducer-core",
+      "window-registry",
+      "llm-coding",
+      "lionkimbro"
+    ],
+    "purpose": "Specify the minimum viable TkVillage kernel: an importable Python package that provides a lightweight host framework for modular tkinter applications using summonable Toplevel windows, reducer-style event queues, runtime ticking, inter-window messaging, configuration, lifecycle hooks, testing support, and debug introspection.",
+    "author": [
+      "Lion Kimbro",
+      "Wing-Cat (ChatGPT)"
+    ],
+    "status": "implementation-target",
+    "created": "2026-06-29",
+    "intended-consumer": [
+      "Codex",
+      "Wing-Cat",
+      "Claude Code",
+      "LLM coding agents",
+      "human programmers"
+    ]
+  },
+  "orientation": {
+    "summary": "TkVillage is a lightweight host framework for modular tkinter applications. It is not a complete GUI framework, visual builder, plugin platform, game engine, or full CIRA implementation. TkVillage v1 should provide the host organism: the shared runtime context, hidden Tk root, Toplevel window lifecycle, window kind registry, summon system, routine tick loop, reducer-oriented event queues, message bus, project-local storage, configuration system, testing gateway, and generic debug/introspection tools.",
+    "one-sentence-target": "Build the minimum viable TkVillage kernel that lets Lion-style tkinter programs register window kinds, summon windows, run a periodic runtime loop, process queued events through reducers, route messages, inspect live state, and remain friendly to LLM-assisted development.",
+    "design-center": "Small procedural Python, explicit dictionaries, inspectable state, predictable runtime behavior, and reusable conventions rather than heavy abstractions."
+  },
+  "relationship-to-other-documents": {
+    "lions-tkinter-development-conventions.v1": {
+      "relationship": "TkVillage should implement and support many of the conventions described in the general tkinter conventions guide.",
+      "notes": [
+        "The conventions document is doctrine and house style.",
+        "This document is an implementation spec for an importable package."
+      ]
+    },
+    "cira.agentic-implementation-brief.v1": {
+      "relationship": "TkVillage v1 is not CIRA itself, but it should remain compatible with CIRA-style localized window implementations, especially for Canvas-heavy windows.",
+      "notes": [
+        "Most TkVillage windows will only need reducer cores and event queues.",
+        "A future TkVillage extension may provide CIRA Canvas support."
+      ]
+    },
+    "lions_dictionary_for_llms.abbreviated.v1": {
+      "relationship": "The dictionary provides orientation for Lion's recurring concepts, including reducer core architecture, CIRA, TkinterTester, and coding standards."
+    }
+  },
+  "v1-scope": {
+    "build-these": {
+      "app-object": "A central runtime object or global application dictionary that owns shared TkVillage state.",
+      "hidden-root": "A single hidden Tk root used as the tkinter runtime anchor.",
+      "project-directory": "A project-local data directory such as .tkvillage or an app-specific .foo directory.",
+      "configuration-system": "A small named configuration system with typed values and basic persistence.",
+      "cli-interface": "A minimal CLI for launching the app, inspecting config, setting config, and running tests.",
+      "window-kind-registry": "A registry of window kinds and their multiplicity/lifecycle rules.",
+      "live-window-registry": "A registry of currently realized Toplevel windows and their runtime records.",
+      "summon-system": "A standard summon_window operation that creates, focuses, or reuses windows according to policy.",
+      "window-policies": "Support for singleton, per-key, free-instance, embedded, and modal policies, with singleton/per-key/free-instance required for v1.",
+      "lifecycle-hooks": "Standard hooks for create, show, close, destroy, and optional tick behavior.",
+      "tick-loop": "A periodic runtime heartbeat, usually 10-30 Hz, implemented with root.after.",
+      "event-queues": "Per-window incoming semantic event queues processed during the tick loop.",
+      "message-bus": "A simple inter-window/module communication mechanism built on explicit posted messages.",
+      "testing-gateway": "A way to run the app in test mode inside the tkinter mainloop.",
+      "debug-introspection": "A generic debug mode with runtime tools for viewing window kinds, active windows, states, queues, events, and effects.",
+      "llm-module-contract": "A simple documented pattern for writing TkVillage window modules so LLMs can create and modify them predictably."
+    },
+    "do-not-build-yet": {
+      "full-cira": "Do not implement a full Continuity Engine, Judge, tokenizers, organisms, or CIRA Canvas system in v1.",
+      "visual-builder": "Do not build a drag-and-drop visual builder.",
+      "tutorial-overlays": "Do not build tutorial overlays or guided UI walkthroughs.",
+      "full-plugin-system": "Do not build a dynamic third-party plugin architecture.",
+      "game-engine": "Do not turn TkVillage into a game engine.",
+      "complex-theme-system": "Do not build a full theme engine beyond simple hooks or future extension points.",
+      "async-framework": "Do not introduce asyncio as a core requirement.",
+      "class-based-framework": "Do not create classes in the process of making the program."
+    }
+  },
+  "terminology": {
+    "app": {
+      "definition": "The central TkVillage runtime context. It owns root, registries, queues, configuration, project paths, debug state, and runtime services."
+    },
+    "root": {
+      "definition": "The hidden tkinter.Tk object that anchors the tkinter interpreter and event loop. It should normally be withdrawn."
+    },
+    "toplevel": {
+      "definition": "A visible tkinter.Toplevel window used as an application window."
+    },
+    "window-kind": {
+      "definition": "A registered type of window, such as main-dashboard, settings-window, edit-design-window, or debug-runtime-dashboard."
+    },
+    "window-record": {
+      "definition": "A live runtime record connecting a Toplevel, window_id, window_kind, instance_key, state dictionary, event queue, reducer, projection function, lifecycle hooks, and metadata."
+    },
+    "window-kind-record": {
+      "definition": "A registry entry describing how to create, summon, identify, and manage a kind of window."
+    },
+    "summon": {
+      "definition": "Request that a window be available and brought forward. Summoning may create a new window, hydrate data, reuse an existing window, or raise/focus an existing window."
+    },
+    "realize": {
+      "definition": "Actually create the tkinter.Toplevel, state dictionary, event queue, widgets, bindings, projection hooks, and live window record."
+    },
+    "hydrate": {
+      "definition": "Load or prepare data needed to initialize a window, especially for a per-key or per-object window."
+    },
+    "raise-window": {
+      "definition": "Bring an already realized Toplevel to the foreground instead of creating a duplicate."
+    },
+    "tick": {
+      "definition": "One iteration of the TkVillage runtime heartbeat."
+    },
+    "semantic-event": {
+      "definition": "A JSON-friendly message representing application meaning, intended for a reducer or event handler."
+    },
+    "effect": {
+      "definition": "An explicit request emitted by a reducer or handler for the runtime to perform work outside the reducer."
+    }
+  },
+  "package-shape": {
+    "package-name": {
+      "preferred": "tkvillage",
+      "notes": [
+        "The repository may already exist at F:\repo\tkvillage.",
+        "The importable package should be named tkvillage unless there is a strong reason not to."
+      ]
+    },
+    "suggested-files": {
+      "tkvillage/**init**.py": {
+        "purpose": "Export the common public API."
+      },
+      "tkvillage/app.py": {
+        "purpose": "Create and manage the central app/runtime object."
+      },
+      "tkvillage/root.py": {
+        "purpose": "Create and manage the hidden Tk root."
+      },
+      "tkvillage/config.py": {
+        "purpose": "Define configuration declarations, loading, saving, getting, and setting."
+      },
+      "tkvillage/project_dir.py": {
+        "purpose": "Resolve and create project-local storage directories."
+      },
+      "tkvillage/windows.py": {
+        "purpose": "Window kind registry, live window registry, summon/realize/raise/close/destroy operations."
+      },
+      "tkvillage/events.py": {
+        "purpose": "Event queue helpers, post_event, queue draining, and event logging."
+      },
+      "tkvillage/reducers.py": {
+        "purpose": "Reducer invocation helpers and effect collection conventions."
+      },
+      "tkvillage/effects.py": {
+        "purpose": "Effect routing helpers and common effect types."
+      },
+      "tkvillage/messages.py": {
+        "purpose": "Simple inter-window/module message bus."
+      },
+      "tkvillage/tick.py": {
+        "purpose": "Runtime heartbeat and root.after scheduling."
+      },
+      "tkvillage/debug.py": {
+        "purpose": "Debug mode state, debug menu installation, snapshots, and inspectors."
+      },
+      "tkvillage/testing.py": {
+        "purpose": "Testing gateway for running app tests inside the tkinter mainloop."
+      },
+      "tkvillage/cli.py": {
+        "purpose": "Command-line entrypoints for config, testing, and app launch."
+      },
+      "examples/minimal_app.py": {
+        "purpose": "A tiny working example that demonstrates a singleton main window, reducer event queue, tick loop, and debug mode."
+      },
+      "tests/test_core.py": {
+        "purpose": "Basic unit and integration tests for registries, summon policies, config, and event processing."
+      }
+    }
+  },
+  "runtime-app-object": {
+    "summary": "TkVillage should provide a central runtime context. This may be an object, a dictionary, or an object that intentionally exposes a dictionary-like runtime state. For Lion-style code, keep it simple, explicit, and inspectable.",
+    "recommended-name": "app",
+    "required-fields": {
+      "root": "The hidden tkinter.Tk object.",
+      "project_dir": "Resolved project-local data directory.",
+      "config": "Configuration values and config declarations.",
+      "window_kinds": "Registry of window kind records.",
+      "windows": "Registry of live window records by window_id.",
+      "windows_by_instance_key": "Lookup from instance_key to live window_id.",
+      "event_log": "Recent event log, bounded.",
+      "effect_log": "Recent effect log, bounded.",
+      "message_log": "Recent message log, bounded.",
+      "worker_records": "Optional registry of worker-thread records.",
+      "debug": "Debug mode state and debug service references.",
+      "is_running": "Boolean indicating whether runtime is active.",
+      "tick_interval_ms": "Runtime heartbeat interval.",
+      "tick_count": "Number of runtime ticks completed."
+    },
+    "notes": {
+      "json-friendly-state": "Reducer-owned state dictionaries should be JSON-friendly where practical.",
+      "runtime-objects": "The app object and window records may contain runtime-only Python objects such as tkinter widgets, queues, and function references."
+    }
+  },
+  "global-app-data-policy": {
+    "name": "TkVillage uses one globally accessible app data dictionary.",
+    "description": "TkVillage v1 should assume a single active application runtime per Python process. The app runtime data should be globally accessible inside the tkvillage package, usually as a module-level dictionary or similarly simple shared structure. Public runtime functions such as post_event, send_message, summon_window, raise_window, close_window, and destroy_window should not require an app argument. These functions may assume the app has already been initialized; they do not need to perform repeated defensive checks for initialization during normal operation."
+  },
+  "root-window-policy": {
+    "summary": "TkVillage should use a hidden root and Toplevel windows.",
+    "rules": {
+      "single-root": "Create exactly one tkinter.Tk root for the application.",
+      "withdraw-root": "Withdraw the root soon after creation.",
+      "visible-windows-are-toplevels": "Use tkinter.Toplevel widgets for visible application windows.",
+      "root-is-runtime-anchor": "The root exists to own the tkinter interpreter, event loop, after scheduling, and shared Tk runtime context.",
+      "root-not-application-window": "The root should not normally be used as a visible application window."
+    }
+  },
+  "configuration-system": {
+    "summary": "TkVillage should provide a small typed configuration system suitable for project-local apps and CLI inspection.",
+    "requirements": {
+      "declare-config": "Allow applications to declare named configuration parameters.",
+      "typed-values": "Support simple types such as string, int, float, bool, path, and choice.",
+      "default-values": "Support default values.",
+      "get-set": "Support get_config and set_config operations.",
+      "persistence": "Persist configuration in the project directory as JSON.",
+      "cli-inspection": "Allow the CLI to list, inspect, and set configuration values.",
+      "json-friendly": "Keep config declarations and values JSON-friendly."
+    },
+    "suggested-config-record-shape": {
+      "name": "<config-name>",
+      "type": "string | int | float | bool | path | choice",
+      "default": "<default-value>",
+      "description": "<human-readable description>",
+      "choices": "<optional array of allowed values for choice type>"
+    }
+  },
+  "project-directory": {
+    "summary": "TkVillage should support an app-specific project-local storage directory.",
+    "requirements": {
+      "default-name": "Default to .tkvillage unless the app declares another project directory name.",
+      "create-if-missing": "Create the project directory when needed.",
+      "config-location": "Store config JSON in the project directory.",
+      "logs-location": "Store optional debug logs or runtime artifacts in the project directory.",
+      "test-mode": "Allow test mode to use a temporary or test-specific project directory."
+    },
+    "example-layout": {
+      ".tkvillage/config.json": "Persisted configuration values.",
+      ".tkvillage/logs/": "Optional logs.",
+      ".tkvillage/debug-snapshots/": "Optional saved debug snapshots.",
+      ".tkvillage/tmp/": "Optional temporary runtime artifacts."
+    }
+  },
+  "window-kind-registry": {
+    "summary": "The window kind registry describes what kinds of windows can be summoned and how they behave.",
+    "required-window-kind-fields": {
+      "window_kind": "Stable string identifier for this kind of window.",
+      "title": "Human-readable title.",
+      "multiplicity": "singleton | per-key | free-instance | embedded | modal",
+      "create": "Function that creates widgets for this window or realizes the Toplevel.",
+      "make_initial_state": "Function that creates the initial reducer state dictionary.",
+      "reduce_event": "Function that handles semantic events for this window kind.",
+      "project": "Function that projects state into tkinter widgets.",
+      "on_show": "Optional hook called when window is shown or raised.",
+      "on_close": "Optional hook called when user requests close.",
+      "on_destroy": "Optional hook called when window is destroyed.",
+      "on_tick": "Optional hook called each runtime tick or at a declared interval.",
+      "debug_label": "Optional human-readable debug label."
+    },
+    "multiplicity-policies": {
+      "singleton": {
+        "meaning": "At most one live window of this kind exists for the whole application.",
+        "summon-behavior": "If live, raise/focus existing window. If not live, realize a new one."
+      },
+      "per-key": {
+        "meaning": "At most one live window of this kind exists for a given instance key, such as a design_id or file path.",
+        "summon-behavior": "If a matching key is live, raise/focus existing window. If not, hydrate as needed and realize a new one."
+      },
+      "free-instance": {
+        "meaning": "Each summon creates a fresh independent window.",
+        "summon-behavior": "Always realize a new window with a generated instance key."
+      },
+      "embedded": {
+        "meaning": "A window-like module intended to be embedded in another container rather than becoming its own Toplevel.",
+        "summon-behavior": "V1 may define the policy but does not need full embedded support unless easy."
+      },
+      "modal": {
+        "meaning": "A temporary modal dialog-style window.",
+        "summon-behavior": "V1 may provide minimal support or leave modal behavior as a future extension."
+      }
+    }
+  },
+  "live-window-registry": {
+    "summary": "The live window registry tracks realized windows and connects tkinter objects to reducer state, event queues, and lifecycle metadata.",
+    "required-window-record-fields": {
+      "window_id": "Unique live window id.",
+      "window_kind": "The registered kind of window.",
+      "multiplicity": "Multiplicity policy copied from the window kind record.",
+      "instance_key": "Stable lookup key for singleton/per-key windows, generated key for free-instance windows.",
+      "key": "Optional object key or instance key payload for per-key windows.",
+      "toplevel": "Runtime-only tkinter.Toplevel object.",
+      "state": "Reducer-owned state dictionary for this window.",
+      "event_queue": "Incoming semantic event queue for this window.",
+      "widgets": "Runtime-only dictionary of important widget references for projection and callbacks.",
+      "created_at": "Creation timestamp or tick count.",
+      "last_shown_at": "Last shown timestamp or tick count.",
+      "is_open": "Boolean indicating whether the window is considered open.",
+      "is_destroyed": "Boolean indicating whether the window has been destroyed.",
+      "debug_label": "Human-readable label for debug tools."
+    },
+    "lookup-requirements": {
+      "by-window-id": "Find live window records by window_id.",
+      "by-instance-key": "Find singleton and per-key windows by instance_key.",
+      "from-toplevel-to-record": "Find the live record for a tkinter.Toplevel.",
+      "from-state-to-window": "Use state.window_id to find the live window record.",
+      "cleanup": "Remove all live lookups when a window is destroyed."
+    },
+    "state-boundary": {
+      "rule": "Reducer state may store window_id, window_kind, key, and instance_key, but should not store tkinter widget objects.",
+      "reason": "The runtime owns tkinter objects; reducer state owns semantic state."
+    }
+  },
+  "clean-data-vs-runtime-objects": {
+    "name": "Keep data dictionaries JSON-clean; isolate Python objects behind string-keyed runtime registries.",
+    "description": "TkVillage should keep semantic data dictionaries JSON-serializable wherever practical. Reducer state, configuration values, events, effects, debug snapshots, and persisted records should contain ordinary JSON-compatible data rather than direct references to Python objects. When runtime Python objects are needed, such as tkinter widgets, Toplevels, queues, threads, functions, or file handles, they should be stored in explicit runtime registries or dictionaries keyed by stable strings. Semantic state may store those stable string keys, but not the Python objects themselves."
+  },
+  "summon-system": {
+    "summary": "TkVillage should provide a standard summon_window operation. Callers should not need to know whether a window already exists.",
+    "public-api": {
+      "summon_window": "summon_window(window_kind, key=None, payload=None)",
+      "raise_window": "raise_window(window_id)",
+      "close_window": "close_window(window_id)",
+      "destroy_window": "destroy_window(window_id)"
+    },
+    "summon-rules": {
+      "lookup-kind": "Find the window kind record.",
+      "compute-instance-key": "Compute instance_key based on multiplicity, window_kind, and key.",
+      "singleton-reuse": "For singleton windows, reuse the existing instance if present.",
+      "per-key-reuse": "For per-key windows, reuse the matching instance if present.",
+      "free-create": "For free-instance windows, always create a new instance.",
+      "hydrate-before-realize": "For per-key windows, use payload or app data to prepare initial state as needed.",
+      "realize-new": "Create Toplevel, state, queue, widgets, callbacks, and live window record.",
+      "raise-after-summon": "Bring the summoned window to the foreground whether newly created or reused."
+    },
+    "instance-key-formats": {
+      "singleton": "<window-kind>:singleton",
+      "per-key": "<window-kind>:<key>",
+      "free-instance": "<window-kind>:<generated-id>"
+    }
+  },
+  "window-module-contract": {
+    "summary": "TkVillage window modules should follow a simple LLM-friendly contract so windows can be created, inspected, and modified predictably.",
+    "recommended-module-functions": {
+      "register": "register(app) registers the window kind with the app.",
+      "make_initial_state": "make_initial_state(app, key=None, payload=None) returns a JSON-friendly state dictionary.",
+      "create": "create(app, record) builds widgets inside record.toplevel and populates record.widgets.",
+      "reduce_event": "reduce_event(app, state, event) returns new_state and effects.",
+      "project": "project(app, record) updates widgets from record.state.",
+      "on_show": "Optional on_show(app, record) hook.",
+      "on_close": "Optional on_close(app, record) hook. It may return close permission or effects.",
+      "on_destroy": "Optional on_destroy(app, record) cleanup hook.",
+      "on_tick": "Optional on_tick(app, record) hook."
+    },
+    "reducer-contract": {
+      "input": "app, state, event",
+      "output": "new_state, effects",
+      "rules": {
+        "no-widget-mutation": "Reducers should not directly mutate tkinter widgets.",
+        "no-long-work": "Reducers should not perform long-running operations.",
+        "explicit-effects": "Reducers should request outside work through effects.",
+        "json-friendly-events": "Events should be JSON-friendly dictionaries when practical."
+      }
+    },
+    "callback-contract": {
+      "rule": "Tkinter callbacks should usually post semantic events into the owning window's event queue.",
+      "exception": "Pure widget-local behavior may remain local when it does not change application meaning."
+    }
+  },
+  "tick-loop": {
+    "summary": "TkVillage should run a periodic runtime heartbeat using root.after.",
+    "default-interval-ms": 50,
+    "acceptable-range-ms": "33-100",
+    "responsibilities": {
+      "increment-tick": "Increment app.tick_count.",
+      "drain-worker-queues": "Receive worker messages if worker support is present.",
+      "drain-window-events": "Drain each live window's event queue.",
+      "reduce-events": "Call the appropriate reduce_event function for each queued event.",
+      "route-effects": "Route effects emitted by reducers.",
+      "deliver-messages": "Deliver inter-window or module messages.",
+      "call-window-ticks": "Call on_tick hooks for windows that define them.",
+      "project-windows": "Call project functions for windows needing refresh.",
+      "debug-updates": "Update debug dashboards or logs if debug mode is active.",
+      "reschedule": "Schedule the next tick with root.after."
+    },
+    "rules": {
+      "short-work-only": "The tick loop should remain short and predictable.",
+      "no-blocking": "Long operations must not run inside the tick loop.",
+      "bounded-logs": "Event, effect, and message logs should be bounded to prevent unbounded memory growth.",
+      "safe-errors": "Exceptions during tick processing should be logged and surfaced without silently killing the runtime loop."
+    }
+  },
+  "event-system": {
+    "summary": "Each live window should have an incoming event queue. Semantic events are posted into queues and processed during the tick loop.",
+    "public-api": {
+      "post_event": "post_event(target_id, event)",
+      "post_event_to_window": "post_event_to_window(window_id, event)",
+      "post_event_to_kind": "post_event_to_kind(window_kind, event) -- Optional helper for singleton window kinds.",
+      "post_event_to_instance": "post_event_to_instance(instance_key, event) -- Optional helper for per-key windows.",
+      "broadcast_event": "broadcast_event(event) -- Optional helper for debug or global notifications."
+    },
+    "event-shape": {
+      "type": "<EVENT_TYPE>",
+      "source": "<optional source window/module>",
+      "payload": "<optional event-specific data>"
+    },
+    "rules": {
+      "semantic-over-raw": "Events sent to reducers should express application meaning rather than raw tkinter event objects.",
+      "queue-first": "Callbacks should queue events rather than directly dispatch them.",
+      "log-events": "Recent events should be logged for debug mode.",
+      "no-widget-objects": "Events should not normally contain tkinter widget objects."
+    }
+  },
+  "effect-system": {
+    "summary": "Reducers may emit effects for the runtime to handle.",
+    "effect-types": {
+      "POST_EVENT": "Post another event to a runtime target queue.",
+      "SEND_MESSAGE": "Send a message to a runtime target.",
+      "SUMMON_WINDOW": "Summon a window by kind and optional key.",
+      "CLOSE_WINDOW": "Close a window.",
+      "DESTROY_WINDOW": "Destroy a window.",
+      "REQUEST_PROJECT": "Mark a window for projection refresh.",
+      "START_WORKER": "Start a background worker.",
+      "SHOW_MESSAGE_BOX": "Show a tkinter messagebox.",
+      "OPEN_FILE_DIALOG": "Open a file dialog.",
+      "SAVE_FILE_DIALOG": "Open a save-file dialog.",
+      "LOG": "Write to runtime log.",
+      "COPY_DEBUG_SNAPSHOT": "Prepare a debug snapshot for clipboard or display."
+    },
+    "rules": {
+      "runtime-routes-effects": "Effects are handled by the runtime, not by the reducer.",
+      "log-effects": "Recent effects should be logged for debug tools.",
+      "unknown-effects": "Unknown effects should be logged clearly and should not crash the app unless strict mode is enabled."
+    }
+  },
+  "message-bus": {
+    "summary": "TkVillage should provide simple inter-window/module communication using explicit messages.",
+    "requirements": {
+      "send-to-target": "Send a message or event to a specific target_id.",
+      "send-to-window": "Send a message or event to a specific window_id.",
+      "send-to-service": "Send a message or event to a non-window service target.",
+      "send-to-instance": "Send to a window by instance_key when available.",
+      "send-to-kind": "Send to a singleton window kind when appropriate.",
+      "broadcast": "Optional broadcast to all targets, all windows, or all targets of a kind.",
+      "logs": "Maintain a bounded recent message log."
+    },
+    "rules": {
+      "no-direct-cross-window-mutation": "Windows should not directly mutate one another's state or widgets.",
+      "route-through-runtime": "Cross-window communication should route through TkVillage."
+    }
+  },
+  "runtime-targets-and-service-queues": {
+    "name": "Queue targets are general runtime participants, not only windows.",
+    "description": "TkVillage should support queued message targets that are not connected to a tkinter Toplevel window. Windows are one kind of runtime target, but services such as disk queues, network bridges, autosave systems, worker managers, file watchers, debug logs, or application-level coordinators may also have target ids, inbox queues, handlers, and lifecycle records. This allows windows and services to communicate through the same explicit message-routing system without direct mutation or hidden coupling."
+  },
+  "target-registry": {
+    "summary": "TkVillage should maintain a target registry for anything that can receive queued runtime input. Windows are one kind of target, but services, worker managers, debug tools, disk queues, network bridges, autosave systems, and app-level coordinators may also be targets.",
+    "relationship-to-window-registry": "The live window registry is a specialized view of targets whose target_kind is window. Window records may also be target records or may be linked to target records by target_id.",
+    "target-kinds": {
+      "window": "A visible or window-like target backed by a tkinter.Toplevel or embedded widget area.",
+      "service": "A non-visual runtime target with an inbox and message/event handler.",
+      "worker": "A target representing a background worker or worker manager.",
+      "debug": "A debug/introspection target.",
+      "app": "An application-level coordinator target."
+    },
+    "recommended-target-record-shape": {
+      "target_id": "<stable target id>",
+      "target_kind": "window | service | worker | debug | app",
+      "inbox": "<queue of incoming events/messages>",
+      "handler": "<function reference or handler name>",
+      "state": "<JSON-friendly target state when applicable>",
+      "runtime_objects_key": "<optional key into runtime object registry>",
+      "is_active": true
+    },
+    "rules": {
+      "all-queued-input-has-target": "Any queued event or message should have a target_id.",
+      "windows-are-targets": "Each live window should normally have a target_id and inbox queue.",
+      "services-can-be-targets": "Non-window services may have target ids, inbox queues, handlers, and state.",
+      "target-state-is-clean": "Target state should be JSON-clean where practical.",
+      "runtime-objects-are-isolated": "Tkinter widgets, threads, queues, sockets, and other Python objects should live in runtime object registries rather than semantic state."
+    }
+  },
+  "debug-introspection": {
+    "summary": "TkVillage should provide a debug mode that exposes generic runtime introspection tools.",
+    "activation": {
+      "default-key-chord": "Ctrl+Shift+D",
+      "behavior": "Toggle debug mode for the application.",
+      "notes": "The key chord may be configurable."
+    },
+    "debug-menu": {
+      "summary": "When debug mode is active, visible application windows may gain a Debug menu.",
+      "menu-items": {
+        "runtime-dashboard": "Open or summon the runtime dashboard.",
+        "window-kinds": "Show registered window kinds.",
+        "active-windows": "Show live window records.",
+        "state-inspector": "Inspect reducer state for a selected window.",
+        "event-log": "Show recent events.",
+        "effect-log": "Show recent effects.",
+        "message-log": "Show recent messages.",
+        "worker-status": "Show worker records if worker support is present.",
+        "copy-debug-snapshot": "Copy a JSON-friendly debug snapshot for pasting into an AI conversation."
+      }
+    },
+    "debug-windows": {
+      "runtime-dashboard": {
+        "multiplicity": "singleton",
+        "purpose": "Show runtime summary, tick count, debug mode status, counts of windows/events/effects/messages, and quick links to inspectors."
+      },
+      "window-kind-directory": {
+        "multiplicity": "singleton",
+        "purpose": "List registered window kinds, multiplicity policies, and hooks."
+      },
+      "active-window-directory": {
+        "multiplicity": "singleton",
+        "purpose": "List live windows, their ids, kinds, instance keys, open/destroyed status, and queue lengths."
+      },
+      "state-inspector": {
+        "multiplicity": "per-key",
+        "purpose": "Inspect a particular live window's reducer state dictionary and runtime record."
+      }
+    },
+    "debug-snapshot": {
+      "summary": "A debug snapshot should be JSON-friendly and easy to paste into ChatGPT, Codex, Claude Code, or another debugging assistant.",
+      "suggested-shape": {
+        "app": {
+          "tick_count": "<number>",
+          "debug_enabled": "<bool>",
+          "tick_interval_ms": "<number>"
+        },
+        "window_kinds": "<summary of registered window kinds>",
+        "active_windows": "<summary of live windows>",
+        "selected_window_state": "<optional reducer state for selected window>",
+        "recent_events": "<bounded event log>",
+        "recent_effects": "<bounded effect log>",
+        "recent_messages": "<bounded message log>",
+        "worker_records": "<optional worker summary>"
+      }
+    }
+  },
+  "threading-and-workers": {
+    "summary": "TkVillage v1 may include a minimal worker bridge, but it should be conservative. Tkinter belongs on the main thread.",
+    "rules": {
+      "main-thread-tkinter": "All tkinter widget creation, mutation, and reading should happen on the main thread.",
+      "worker-communication-by-queues": "Workers communicate through safe queues or explicit runtime messages.",
+      "no-worker-widget-calls": "Worker threads must not call tkinter widget methods.",
+      "tick-polls-workers": "The tick loop may poll worker output queues and convert worker messages into semantic events.",
+      "long-work-off-main-thread": "Long filesystem, image, network, subprocess, or computation work should not block the tkinter thread."
+    },
+    "v1-minimum": {
+      "worker-record": "Optional simple worker record with worker_id, status, input_queue, output_queue, thread, started_at, completed_at, error.",
+      "start-worker-effect": "START_WORKER effect may be implemented if needed by examples or tests.",
+      "defer-complex-supervision": "Complex cancellation, retries, process pools, and watchdogs may be deferred."
+    }
+  },
+  "testing-gateway": {
+    "summary": "TkVillage should support running applications in test mode inside the tkinter mainloop.",
+    "requirements": {
+      "test-mode-flag": "Allow app creation with test_mode true.",
+      "no-real-user-required": "Tests should be able to summon windows, post events, run ticks, and inspect resulting state without manual interaction.",
+      "bounded-mainloop": "Provide a way to run the tkinter loop until a test completes, times out, or reaches a tick limit.",
+      "state-inspection": "Tests should be able to inspect app state, window records, and reducer state dictionaries.",
+      "integration-friendly": "The testing gateway should be compatible with Lion's TkinterTester style."
+    }
+  },
+  "cli-interface": {
+    "summary": "TkVillage should include a minimal CLI. It may be small in v1.",
+    "commands": {
+      "run": "Launch an application if an app entrypoint is provided.",
+      "config-list": "List configuration values.",
+      "config-get": "Get a configuration value.",
+      "config-set": "Set a configuration value.",
+      "test": "Run tests or launch app in test mode.",
+      "debug-snapshot": "Optional command to print or save a debug snapshot if app integration supports it."
+    },
+    "notes": {
+      "simple-first": "Prefer a minimal argparse implementation.",
+      "no-heavy-cli-framework": "Do not introduce a heavy CLI dependency."
+    }
+  },
+  "minimum-example-application": {
+    "summary": "The v1 implementation should include a minimal working example.",
+    "requirements": {
+      "hidden-root": "Uses hidden root and Toplevel window.",
+      "singleton-main-window": "Registers and summons a singleton main window.",
+      "button-posts-event": "A button callback posts a semantic event into the window queue.",
+      "reducer-updates-state": "The reducer updates a counter or status field.",
+      "projection-updates-widget": "Projection updates a label from reducer state.",
+      "debug-toggle": "Ctrl+Shift+D toggles debug mode.",
+      "debug-dashboard": "Debug dashboard can inspect active windows and selected window state."
+    }
+  },
+  "implementation-style": {
+    "principles": {
+      "small-and-readable": "Prefer small files and readable procedural code over elaborate abstractions.",
+      "dictionary-friendly": "Use dictionaries for records where practical and readable.",
+      "classes-allowed-but-not-required": "Classes may be used for the app object or simple containers, but avoid deep inheritance.",
+      "explicit-registries": "Make registries explicit and inspectable.",
+      "json-friendly-boundaries": "Keep state, config, events, effects, and debug snapshots JSON-friendly where practical.",
+      "runtime-only-objects-stay-in-runtime": "Tkinter widgets, queues, threads, and function references may live in runtime records but not reducer-owned semantic state.",
+      "llm-readable": "Write code so an LLM can quickly locate window registration, state shape, reducer branches, effects, and projection."
+    }
+  },
+  "acceptance-criteria": {
+    "kernel-runs": "A minimal TkVillage app can be launched and shows a visible Toplevel while the root remains withdrawn.",
+    "window-registration-works": "An app can register at least one singleton window kind.",
+    "summon-singleton-works": "Summoning the same singleton twice raises/focuses the existing window instead of creating a duplicate.",
+    "summon-free-instance-works": "A free-instance window kind can create multiple independent windows.",
+    "summon-per-key-works": "A per-key window kind reuses the matching live window for the same key and creates a new one for a different key.",
+    "event-queue-works": "A widget callback can post an event that is processed during the tick loop.",
+    "reducer-works": "A reducer can update a window state dictionary and emit effects.",
+    "projection-works": "Projection updates visible widgets from reducer state.",
+    "message-routing-works": "One window or module can post a message/event to another window through the runtime.",
+    "debug-mode-works": "A key chord can enable debug mode and expose at least one debug/introspection window.",
+    "state-snapshot-works": "The runtime can produce a JSON-friendly debug snapshot containing active windows and at least one window state dictionary.",
+    "test-mode-works": "A test can create an app, summon a window, post an event, run ticks, and assert on resulting state without manual GUI interaction."
+  },
+  "future-work": {
+    "treeview-helpers": "Reusable sortable Treeview adapter following Lion's tkinter conventions.",
+    "cira-canvas-layer": "Optional localized CIRA support for Canvas-heavy windows.",
+    "worker-supervision": "More complete worker lifecycle, cancellation, retries, and progress UI.",
+    "persistent-window-layout": "Save and restore window positions and sizes.",
+    "debug-state-editor": "Allow controlled editing or event injection from the debug inspector.",
+    "log-export": "Export event/effect/message logs for AI-assisted debugging.",
+    "package-generators": "Generate skeleton window modules from registered contracts.",
+    "typed-config-ui": "Generate config editor UI from config declarations."
+  },
+  "codex-instructions": {
+    "implementation-order": {
+      "step-01": "Create the tkvillage package skeleton.",
+      "step-02": "Implement app creation with hidden root and project directory.",
+      "step-03": "Implement window kind registry and live window registry.",
+      "step-04": "Implement summon_window for singleton, per-key, and free-instance windows.",
+      "step-05": "Implement tick loop and per-window event queue draining.",
+      "step-06": "Implement reducer invocation and projection refresh.",
+      "step-07": "Implement basic effect routing for POST_EVENT, SUMMON_WINDOW, LOG, and REQUEST_PROJECT.",
+      "step-08": "Implement minimal debug mode and runtime dashboard.",
+      "step-09": "Implement debug snapshot generation.",
+      "step-10": "Implement minimal example application.",
+      "step-11": "Implement tests for acceptance criteria.",
+      "step-12": "Add CLI only after the runtime basics are working."
+    },
+    "priority": "Build the minimum viable host organism first. Avoid expanding into CIRA, visual building, plugin systems, or advanced worker orchestration until the kernel is solid.",
+    "style-warning": "Do not bury important runtime state inside private objects that are hard to inspect. Prefer explicit dictionaries and clear functions."
+  }
+}
