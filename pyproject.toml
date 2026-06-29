@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tkvillage"
+version = "0.1.0"
+description = "Lightweight Tkinter host runtime for Lion-style modular GUI apps."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "CC0-1.0"}
+
+[project.scripts]
+tkvillage = "tkvillage.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
