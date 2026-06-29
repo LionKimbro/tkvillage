@@ -3,7 +3,8 @@ from __future__ import annotations
 import time
 import tkinter as tk
 
-from .app import app, next_id
+from . import app as rt
+from .app import next_id
 from .root import ensure_root
 
 
@@ -42,16 +43,16 @@ def register_window_kind(
         "on_tick": on_tick,
         "debug_label": debug_label or title or window_kind,
     }
-    app["window_kinds"][window_kind] = record
+    rt.window_kinds[window_kind] = record
     return record
 
 
 def summon_window(window_kind, key=None, payload=None):
-    kind = app["window_kinds"][window_kind]
+    kind = rt.window_kinds[window_kind]
     instance_key = compute_instance_key(kind, key)
-    existing_id = app["windows_by_instance_key"].get(instance_key)
-    if existing_id in app["windows"]:
-        record = app["windows"][existing_id]
+    existing_id = rt.windows_by_instance_key.get(instance_key)
+    if existing_id in rt.windows:
+        record = rt.windows[existing_id]
         raise_window(record["window_id"])
         return record
     record = realize_window(kind, instance_key, key, payload)
@@ -76,7 +77,7 @@ def realize_window(kind, instance_key, key=None, payload=None):
     window_id = next_id("window")
     toplevel = tk.Toplevel(root)
     toplevel.title(kind["title"])
-    state = kind["make_initial_state"](app, key, payload)
+    state = kind["make_initial_state"](rt, key, payload)
     state.setdefault("window_id", window_id)
     state.setdefault("window_kind", kind["window_kind"])
     state.setdefault("instance_key", instance_key)
@@ -101,9 +102,9 @@ def realize_window(kind, instance_key, key=None, payload=None):
         "needs_project": True,
         "debug_label": kind["debug_label"],
     }
-    app["windows"][window_id] = record
-    app["windows_by_instance_key"][instance_key] = window_id
-    app["targets"][window_id] = {
+    rt.windows[window_id] = record
+    rt.windows_by_instance_key[instance_key] = window_id
+    rt.targets[window_id] = {
         "target_id": window_id,
         "target_kind": "window",
         "inbox": record["event_queue"],
@@ -112,13 +113,13 @@ def realize_window(kind, instance_key, key=None, payload=None):
         "is_active": True,
     }
     toplevel.protocol("WM_DELETE_WINDOW", lambda win=window_id: close_window(win))
-    kind["create"](app, record)
+    kind["create"](rt, record)
     project_window(record)
     return record
 
 
 def raise_window(window_id):
-    record = app["windows"][window_id]
+    record = rt.windows[window_id]
     top = record["toplevel"]
     try:
         top.deiconify()
@@ -127,17 +128,17 @@ def raise_window(window_id):
     except Exception:
         pass
     record["last_shown_at"] = time.time()
-    hook = app["window_kinds"][record["window_kind"]]["on_show"]
+    hook = rt.window_kinds[record["window_kind"]]["on_show"]
     if hook is not None:
-        hook(app, record)
+        hook(rt, record)
     return record
 
 
 def close_window(window_id):
-    record = app["windows"][window_id]
-    hook = app["window_kinds"][record["window_kind"]]["on_close"]
+    record = rt.windows[window_id]
+    hook = rt.window_kinds[record["window_kind"]]["on_close"]
     if hook is not None:
-        result = hook(app, record)
+        result = hook(rt, record)
         if result is False:
             return False
     destroy_window(window_id)
@@ -145,35 +146,35 @@ def close_window(window_id):
 
 
 def destroy_window(window_id):
-    record = app["windows"].get(window_id)
+    record = rt.windows.get(window_id)
     if record is None:
         return
-    hook = app["window_kinds"][record["window_kind"]]["on_destroy"]
+    hook = rt.window_kinds[record["window_kind"]]["on_destroy"]
     if hook is not None:
-        hook(app, record)
+        hook(rt, record)
     record["is_open"] = False
     record["is_destroyed"] = True
-    app["windows_by_instance_key"].pop(record["instance_key"], None)
-    app["targets"].pop(window_id, None)
+    rt.windows_by_instance_key.pop(record["instance_key"], None)
+    rt.targets.pop(window_id, None)
     try:
         record["toplevel"].destroy()
     except Exception:
         pass
-    app["windows"].pop(window_id, None)
+    rt.windows.pop(window_id, None)
 
 
 def project_window(record):
-    kind = app["window_kinds"][record["window_kind"]]
-    kind["project"](app, record)
+    kind = rt.window_kinds[record["window_kind"]]
+    kind["project"](rt, record)
     record["needs_project"] = False
 
 
 def get_window(window_id):
-    return app["windows"][window_id]
+    return rt.windows[window_id]
 
 
 def list_windows():
-    return list(app["windows"].values())
+    return list(rt.windows.values())
 
 
 def default_initial_state(_app, key=None, payload=None):

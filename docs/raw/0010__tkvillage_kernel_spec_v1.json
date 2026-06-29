@@ -206,9 +206,10 @@
       "runtime-objects": "The app object and window records may contain runtime-only Python objects such as tkinter widgets, queues, and function references."
     }
   },
-  "global-app-data-policy": {
-    "name": "TkVillage uses one globally accessible app data dictionary.",
-    "description": "TkVillage v1 should assume a single active application runtime per Python process. The app runtime data should be globally accessible inside the tkvillage package, usually as a module-level dictionary or similarly simple shared structure. Public runtime functions such as post_event, send_message, summon_window, raise_window, close_window, and destroy_window should not require an app argument. These functions may assume the app has already been initialized; they do not need to perform repeated defensive checks for initialization during normal operation."
+  "global-runtime-data-policy": {
+    "name": "TkVillage uses globally accessible runtime data.",
+    "description": "TkVillage v1 assumes a single active application runtime per Python process. Runtime state should be held in simple module-level globals, such as window_kinds, windows, windows_by_instance_key, targets, runtime_objects, event_log, effect_log, message_log, worker_records, debug, root, config, tick_count, and tick_interval_ms. Public runtime functions such as post_event, send_message, summon_window, raise_window, close_window, and destroy_window should not require an app argument. They may access the module-level runtime data directly through the TkVillage runtime module.",
+    "correction": "Do not implement TkVillage as one large nested app dictionary unless explicitly requested. The phrase 'global app data' means runtime data is globally accessible, not that all runtime data must be nested under app[...]."
   },
   "root-window-policy": {
     "summary": "TkVillage should use a hidden root and Toplevel windows.",
@@ -654,5 +655,11 @@
     },
     "priority": "Build the minimum viable host organism first. Avoid expanding into CIRA, visual building, plugin systems, or advanced worker orchestration until the kernel is solid.",
     "style-warning": "Do not bury important runtime state inside private objects that are hard to inspect. Prefer explicit dictionaries and clear functions."
-  }
+  },
+  "revision-notes": [
+    {
+      "date": "2026-06-29",
+      "change": "Clarified global runtime state policy. TkVillage should use globally accessible module-level runtime data, not one nested app dictionary containing all runtime data."
+    }
+  ]
 }

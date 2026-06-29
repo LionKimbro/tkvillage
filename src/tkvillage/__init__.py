@@ -1,4 +1,5 @@
-from .app import app, create_app, get_app, reset_app, run, shutdown
+from . import app as rt
+from .app import create_app, reset_app, run, shutdown
 from .config import declare_config, get_config, list_config, load_config, save_config, set_config
 from .debug import copy_debug_snapshot, get_debug_snapshot, toggle_debug
 from .effects import route_effect, route_effects
@@ -29,7 +30,6 @@ from .windows import (
 )
 
 __all__ = [
-    "app",
     "broadcast_event",
     "broadcast_message",
     "close_window",
@@ -37,7 +37,6 @@ __all__ = [
     "create_app",
     "declare_config",
     "destroy_window",
-    "get_app",
     "get_config",
     "get_debug_snapshot",
     "get_window",
@@ -52,6 +51,7 @@ __all__ = [
     "register_service_target",
     "register_window_kind",
     "reset_app",
+    "rt",
     "route_effect",
     "route_effects",
     "run",

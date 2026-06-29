@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from pathlib import Path
 import time
 
 from .project_dir import resolve_project_dir
@@ -9,35 +8,38 @@ from .project_dir import resolve_project_dir
 DEFAULT_TICK_INTERVAL_MS = 50
 
 
-app = {}
+g = {}
+config_declarations = {}
+config_values = {}
+window_kinds = {}
+windows = {}
+windows_by_instance_key = {}
+targets = {}
+runtime_objects = {}
+event_log = []
+effect_log = []
+message_log = []
+runtime_log = []
+worker_records = {}
+debug = {}
+id_counters = {}
 
 
 def reset_app():
-    """Reset the single TkVillage runtime dictionary for tests and fresh launches."""
-    root = app.get("root")
-    if root is not None:
+    """Reset runtime globals while preserving container identities."""
+    old_root = g.get("root")
+    if old_root is not None:
         try:
-            root.destroy()
+            old_root.destroy()
         except Exception:
             pass
-    app.clear()
-    app.update(
+
+    g.clear()
+    g.update(
         {
             "name": "tkvillage",
             "root": None,
             "project_dir": None,
-            "config": {"declarations": {}, "values": {}},
-            "window_kinds": {},
-            "windows": {},
-            "windows_by_instance_key": {},
-            "targets": {},
-            "runtime_objects": {},
-            "event_log": [],
-            "effect_log": [],
-            "message_log": [],
-            "runtime_log": [],
-            "worker_records": {},
-            "debug": {"enabled": False, "last_snapshot": None},
             "is_running": False,
             "test_mode": False,
             "strict_effects": False,
@@ -45,15 +47,25 @@ def reset_app():
             "tick_after_id": None,
             "tick_count": 0,
             "created_at": time.time(),
-            "id_counters": {},
             "max_log_entries": 200,
         }
     )
-    return app
-
-
-def get_app():
-    return app
+    config_declarations.clear()
+    config_values.clear()
+    window_kinds.clear()
+    windows.clear()
+    windows_by_instance_key.clear()
+    targets.clear()
+    runtime_objects.clear()
+    event_log.clear()
+    effect_log.clear()
+    message_log.clear()
+    runtime_log.clear()
+    worker_records.clear()
+    debug.clear()
+    debug.update({"enabled": False, "last_snapshot": None})
+    id_counters.clear()
+    return g
 
 
 def create_app(
@@ -64,13 +76,10 @@ def create_app(
     test_mode=False,
     create_root=True,
 ):
-    """Create the global runtime and, by default, the hidden Tk root."""
+    """Create the runtime and, by default, the hidden Tk root."""
     reset_app()
-    app["name"] = name
-    app["project_dir"] = resolve_project_dir(project_dir_name, project_root)
-    app["tick_interval_ms"] = int(tick_interval_ms)
-    app["test_mode"] = bool(test_mode)
-    app["is_running"] = True
+    set_runtime_identity(name, tick_interval_ms, test_mode)
+    g["project_dir"] = resolve_project_dir(project_dir_name, project_root)
 
     if create_root:
         from .root import ensure_root
@@ -82,48 +91,52 @@ def create_app(
 
     load_config()
     register_debug_windows()
-    if app["root"] is not None:
+    if g["root"] is not None:
         install_debug_shortcut()
-    return app
+    return g
+
+
+def set_runtime_identity(new_name, new_tick_interval_ms, new_test_mode):
+    g["name"] = new_name
+    g["tick_interval_ms"] = int(new_tick_interval_ms)
+    g["test_mode"] = bool(new_test_mode)
+    g["is_running"] = True
 
 
 def next_id(prefix):
-    counters = app["id_counters"]
-    counters[prefix] = counters.get(prefix, 0) + 1
-    return f"{prefix}-{counters[prefix]}"
+    id_counters[prefix] = id_counters.get(prefix, 0) + 1
+    return f"{prefix}-{id_counters[prefix]}"
 
 
-def append_log(name, item):
-    log = app[name]
+def append_log(log, item):
     log.append(item)
-    del log[: max(0, len(log) - app["max_log_entries"])]
+    del log[: max(0, len(log) - g["max_log_entries"])]
 
 
 def run():
     from .root import ensure_root
     from .tick import start_tick_loop
 
-    root = ensure_root()
+    tk_root = ensure_root()
     start_tick_loop()
-    root.mainloop()
+    tk_root.mainloop()
 
 
 def shutdown():
     from .tick import stop_tick_loop
 
     stop_tick_loop()
-    for window_id in list(app["windows"]):
+    for window_id in list(windows):
         from .windows import destroy_window
 
         destroy_window(window_id)
-    root = app.get("root")
-    if root is not None:
+    if g["root"] is not None:
         try:
-            root.destroy()
+            g["root"].destroy()
         except Exception:
             pass
-        app["root"] = None
-    app["is_running"] = False
+        g["root"] = None
+    g["is_running"] = False
 
 
 reset_app()

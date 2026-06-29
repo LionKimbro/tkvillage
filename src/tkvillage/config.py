@@ -3,14 +3,14 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from .app import app
+from . import app as rt
 
 
 CONFIG_TYPES = {"string", "int", "float", "bool", "path", "choice"}
 
 
 def config_path():
-    return app["project_dir"] / "config.json"
+    return rt.g["project_dir"] / "config.json"
 
 
 def declare_config(name, default=None, type="string", description="", choices=None):
@@ -25,8 +25,8 @@ def declare_config(name, default=None, type="string", description="", choices=No
         "description": description,
         "choices": list(choices or []),
     }
-    app["config"]["declarations"][name] = declaration
-    app["config"]["values"].setdefault(name, default)
+    rt.config_declarations[name] = declaration
+    rt.config_values.setdefault(name, default)
     return declaration
 
 
@@ -35,44 +35,44 @@ def load_config():
     values = {}
     if path.exists():
         values = json.loads(path.read_text(encoding="utf-8"))
-    for name, declaration in app["config"]["declarations"].items():
-        app["config"]["values"][name] = coerce_config_value(
+    for name, declaration in rt.config_declarations.items():
+        rt.config_values[name] = coerce_config_value(
             values.get(name, declaration["default"]), declaration
         )
     for name, value in values.items():
-        if name not in app["config"]["declarations"]:
-            app["config"]["values"][name] = value
-    return app["config"]["values"]
+        if name not in rt.config_declarations:
+            rt.config_values[name] = value
+    return rt.config_values
 
 
 def save_config():
     path = config_path()
     path.parent.mkdir(parents=True, exist_ok=True)
     data = {}
-    for name, value in app["config"]["values"].items():
+    for name, value in rt.config_values.items():
         data[name] = str(value) if isinstance(value, Path) else value
     path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
 def get_config(name):
-    return app["config"]["values"][name]
+    return rt.config_values[name]
 
 
 def set_config(name, value, persist=True):
-    declaration = app["config"]["declarations"].get(name)
+    declaration = rt.config_declarations.get(name)
     if declaration is None:
         declaration = declare_config(name, value, infer_config_type(value))
-    app["config"]["values"][name] = coerce_config_value(value, declaration)
+    rt.config_values[name] = coerce_config_value(value, declaration)
     if persist:
         save_config()
-    return app["config"]["values"][name]
+    return rt.config_values[name]
 
 
 def list_config():
     rows = []
-    for name, declaration in app["config"]["declarations"].items():
+    for name, declaration in rt.config_declarations.items():
         row = dict(declaration)
-        row["value"] = app["config"]["values"].get(name)
+        row["value"] = rt.config_values.get(name)
         rows.append(row)
     return rows
 

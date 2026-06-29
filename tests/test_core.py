@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 import tkvillage as village
-from tkvillage.app import app
+import tkvillage.app as rt
 
 
 def make_tk_app(tmp_path):
@@ -20,6 +20,34 @@ def make_tk_app(tmp_path):
 
 def teardown_function():
     village.reset_app()
+
+
+def test_reset_preserves_runtime_container_identities(tmp_path):
+    original_g = rt.g
+    original_windows = rt.windows
+    original_event_log = rt.event_log
+    original_debug = rt.debug
+
+    village.create_app(
+        "test-tkvillage",
+        ".test-tkvillage",
+        project_root=tmp_path,
+        test_mode=True,
+        create_root=False,
+    )
+    rt.windows["temporary"] = {"window_id": "temporary"}
+    rt.event_log.append({"type": "TEMP"})
+
+    village.reset_app()
+
+    assert rt.g is original_g
+    assert rt.windows is original_windows
+    assert rt.event_log is original_event_log
+    assert rt.debug is original_debug
+    assert rt.g["name"] == "tkvillage"
+    assert rt.windows == {}
+    assert rt.event_log == []
+    assert rt.debug == {"enabled": False, "last_snapshot": None}
 
 
 def register_counter_kind(kind="counter", multiplicity="singleton"):
@@ -63,8 +91,8 @@ def test_singleton_summon_reuses_window(tmp_path):
     second = village.summon_window("counter")
 
     assert first["window_id"] == second["window_id"]
-    assert len(app["windows"]) == 1
-    assert app["root"].state() == "withdrawn"
+    assert len(rt.windows) == 1
+    assert rt.g["root"].state() == "withdrawn"
 
 
 def test_free_instance_summon_creates_multiple_windows(tmp_path):
@@ -75,7 +103,7 @@ def test_free_instance_summon_creates_multiple_windows(tmp_path):
     second = village.summon_window("scratch")
 
     assert first["window_id"] != second["window_id"]
-    assert len(app["windows"]) == 2
+    assert len(rt.windows) == 2
 
 
 def test_per_key_summon_reuses_matching_key(tmp_path):
@@ -88,7 +116,7 @@ def test_per_key_summon_reuses_matching_key(tmp_path):
 
     assert first_a["window_id"] == second_a["window_id"]
     assert first_a["window_id"] != first_b["window_id"]
-    assert len(app["windows"]) == 2
+    assert len(rt.windows) == 2
 
 
 def test_event_reducer_effect_and_projection(tmp_path):
@@ -101,7 +129,7 @@ def test_event_reducer_effect_and_projection(tmp_path):
 
     assert record["state"]["count"] == 3
     assert record["state"]["projected_count"] == 3
-    assert app["effect_log"][-1]["effect"]["type"] == "LOG"
+    assert rt.effect_log[-1]["effect"]["type"] == "LOG"
 
 
 def test_message_routes_to_window_queue(tmp_path):
@@ -113,7 +141,7 @@ def test_message_routes_to_window_queue(tmp_path):
     village.tick_once()
 
     assert record["state"]["last_message"] == {"hello": "there"}
-    assert app["message_log"][-1]["target_id"] == record["window_id"]
+    assert rt.message_log[-1]["target_id"] == record["window_id"]
 
 
 def test_service_target_receives_queued_input(tmp_path):
@@ -130,7 +158,7 @@ def test_service_target_receives_queued_input(tmp_path):
     village.tick_once()
 
     assert seen == [{"type": "PING"}]
-    assert app["targets"]["svc"]["state"]["handled"] is True
+    assert rt.targets["svc"]["state"]["handled"] is True
 
 
 def test_config_declares_coerces_and_persists(tmp_path):
