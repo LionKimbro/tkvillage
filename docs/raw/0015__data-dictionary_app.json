@@ -5,10 +5,10 @@
     "tags": [
       "tkvillage",
       "python",
-      "runtime-state",
-      "data-dictionary",
+      "runtimestate",
+      "datadictionary",
       "softspec",
-      "softspec-v3"
+      "softspecv3"
     ],
     "purpose": "Document the runtime data owned by src/tkvillage/app.py using SoftSpec v3, including structural schemas and data-dictionary annotations for runtime ownership, lifecycle, reset behavior, and serialization boundaries.",
     "author": [
@@ -18,7 +18,17 @@
     "created": "2026-06-29",
     "builds_on": [
       "softspec.spec.v3"
-    ]
+    ],
+    "type": {
+      "logical": {
+        "base": "file",
+        "format": "json",
+        "encoding": "utf-8"
+      },
+      "semantic": {
+        "base": "softspec"
+      }
+    }
   },
   "orientation": {
     "summary": "TkVillage keeps runtime state in src/tkvillage/app.py. Scalar runtime values live in the module-level g dictionary. Mutable runtime containers such as registries, queues, logs, and maps live as explicit module-level dictionaries or lists. reset_app() preserves the identity of these containers by clearing and updating them rather than rebinding them.",

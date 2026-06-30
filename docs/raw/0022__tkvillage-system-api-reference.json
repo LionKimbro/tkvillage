@@ -4,18 +4,28 @@
     "title": "TkVillage System API Reference",
     "tags": [
       "tkvillage",
-      "api-reference",
+      "apireference",
       "python",
       "tkinter",
       "runtime",
-      "llm-coding"
+      "llmcoding"
     ],
     "purpose": "Provide a full user-facing API reference for the current TkVillage kernel.",
     "author": [
       "Codex"
     ],
     "status": "initial",
-    "created": "2026-06-29"
+    "created": "2026-06-29",
+    "type": {
+      "logical": {
+        "base": "file",
+        "format": "json",
+        "encoding": "utf-8"
+      },
+      "semantic": {
+        "base": "reference"
+      }
+    }
   },
   "orientation": {
     "primary-audience": "LLM coding agents that need exact callable contracts while editing TkVillage applications.",

@@ -7,15 +7,25 @@
       "manual",
       "tkinter",
       "runtime",
-      "llm-coding",
-      "reducer-core"
+      "llmcoding",
+      "reducercore"
     ],
     "purpose": "Explain how to use TkVillage, with LLM coding agents as the primary audience and human readers as the secondary audience.",
     "author": [
       "Codex"
     ],
     "status": "initial",
-    "created": "2026-06-29"
+    "created": "2026-06-29",
+    "type": {
+      "logical": {
+        "base": "file",
+        "format": "json",
+        "encoding": "utf-8"
+      },
+      "semantic": {
+        "base": "reference"
+      }
+    }
   },
   "audience": {
     "primary": "LLM coding agents creating, modifying, testing, or debugging TkVillage applications.",
