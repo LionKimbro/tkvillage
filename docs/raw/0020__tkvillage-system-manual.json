@@ -10,7 +10,7 @@
       "llmcoding",
       "reducercore"
     ],
-    "purpose": "Explain how to use TkVillage, with LLM coding agents as the primary audience and human readers as the secondary audience.",
+    "purpose": "Explain how to use TkVillage, a lightweight procedural Tkinter host runtime built around a hidden root, summonable Toplevel windows, reducer-owned state dictionaries, queued semantic events, explicit effects, a periodic tick loop, and debug snapshots.",
     "author": [
       "Codex"
     ],
