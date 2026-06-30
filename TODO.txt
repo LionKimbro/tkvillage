@@ -1,0 +1,16 @@
+date: 2026-06-29
+title: tkVillage To-Dos to get around to
+
+
+== Add Support for Common Conventions ==
+date: 2026-06-29
+
+  In the document lions-tkinter-development-conventions.v1 I've added some additional entries:
+
+  - visual-hierarchy-conventions
+  - status-bar-conventions
+  - path-field-conventions
+  - image-input-and-storage-conventions
+
+  I might like to see about incorporating support for these conventions into tkVillage.
+

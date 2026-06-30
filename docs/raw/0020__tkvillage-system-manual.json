@@ -1,0 +1,313 @@
+{
+  "document": {
+    "document-id": "tkvillage.system-manual.v1",
+    "title": "TkVillage System Manual",
+    "tags": [
+      "tkvillage",
+      "manual",
+      "tkinter",
+      "runtime",
+      "llm-coding",
+      "reducer-core"
+    ],
+    "purpose": "Explain how to use TkVillage, with LLM coding agents as the primary audience and human readers as the secondary audience.",
+    "author": [
+      "Codex"
+    ],
+    "status": "initial",
+    "created": "2026-06-29"
+  },
+  "audience": {
+    "primary": "LLM coding agents creating, modifying, testing, or debugging TkVillage applications.",
+    "secondary": "Human Python programmers who want a compact operational manual for the TkVillage kernel.",
+    "reader-assumptions": [
+      "Reader knows basic Python.",
+      "Reader has some familiarity with tkinter widgets and Toplevel windows.",
+      "Reader understands that TkVillage is a small runtime kernel, not a complete GUI framework."
+    ]
+  },
+  "orientation": {
+    "one-sentence-summary": "TkVillage is a lightweight procedural Tkinter host runtime built around a hidden root, summonable Toplevel windows, reducer-owned state dictionaries, queued semantic events, explicit effects, a periodic tick loop, and debug snapshots.",
+    "current-scope": [
+      "single runtime per Python process",
+      "hidden Tk root",
+      "summonable Toplevel windows",
+      "singleton, per-key, and free-instance window policies",
+      "window-local reducer state dictionaries",
+      "queued semantic events",
+      "effect routing",
+      "service targets",
+      "configuration persistence",
+      "debug snapshots and a minimal debug dashboard",
+      "testing helpers"
+    ],
+    "out-of-scope-for-current-kernel": [
+      "full CIRA implementation",
+      "visual builder",
+      "full plugin system",
+      "tutorial overlays",
+      "game engine",
+      "complex worker supervision",
+      "async framework"
+    ]
+  },
+  "mental-model": {
+    "runtime": "The runtime is the shared host organism. It is stored in module-level data under tkvillage.app, commonly imported as rt.",
+    "g": "rt.g is the small runtime dictionary for scalar runtime values and root/project handles: name, root, project_dir, running flags, tick settings, and log limits.",
+    "registries": "Named module-level dictionaries hold registries for window kinds, live windows, instance-key lookups, targets, config declarations, config values, runtime objects, workers, debug state, and ids.",
+    "hidden-root": "TkVillage creates one tkinter.Tk root and withdraws it. Visible application windows are tkinter.Toplevel widgets.",
+    "window-kind": "A window kind is a registered template: it declares multiplicity, creation function, initial state function, reducer, projection function, and optional lifecycle hooks.",
+    "window-record": "A live window record connects a Toplevel, window_id, instance_key, reducer state, event queue, widgets, and lifecycle metadata.",
+    "target": "A target is anything that can receive queued runtime input. Windows are targets, and services may also be targets.",
+    "event": "An event is a JSON-friendly dictionary representing application meaning. Callbacks should usually post events rather than mutate state directly.",
+    "reducer": "A reducer receives rt, state, and event, then returns new_state and effects.",
+    "effect": "An effect is an explicit request for runtime work outside the reducer, such as posting another event, sending a message, summoning a window, closing a window, logging, or showing a message box.",
+    "projection": "Projection updates widgets from reducer state. Projection is downstream from state and should not secretly decide semantic truth.",
+    "tick-loop": "The tick loop drains service queues and window queues, runs reducers, routes effects, runs on_tick hooks, and projects dirty windows."
+  },
+  "normal-workflow": [
+    {
+      "step": "create-runtime",
+      "description": "Call create_app() once near program start. This resets the runtime, resolves the project directory, creates the hidden root by default, loads config, and registers debug windows.",
+      "code": "village.create_app(\"my-app\", \".my-app\")"
+    },
+    {
+      "step": "declare-config",
+      "description": "Optionally declare configuration keys before loading or using values. If create_app() has already loaded config, call load_config() again after declarations when you need persisted values applied to new declarations.",
+      "code": "village.declare_config(\"ui.scale\", 1, \"int\", \"UI scale\")"
+    },
+    {
+      "step": "register-window-kinds",
+      "description": "Register each window kind with a stable name, multiplicity, create function, make_initial_state function, reducer, and projection.",
+      "code": "village.register_window_kind(\"main\", create=create, make_initial_state=make_initial_state, reduce_event=reduce_event, project=project)"
+    },
+    {
+      "step": "summon-initial-window",
+      "description": "Call summon_window() to create or raise the first visible Toplevel window.",
+      "code": "village.summon_window(\"main\")"
+    },
+    {
+      "step": "run-mainloop",
+      "description": "Call run() to start the periodic tick loop and enter tkinter mainloop.",
+      "code": "village.run()"
+    }
+  ],
+  "minimal-window-module-contract": {
+    "summary": "A TkVillage window module should be easy for an LLM to inspect. Keep the window kind name, event names, initial state, create function, reducer, projection, and register function visible.",
+    "recommended-symbols": {
+      "window-kind": "A stable string constant such as MAIN_WINDOW = \"main\".",
+      "event-types": "Uppercase semantic names such as SAVE_REQUESTED or INCREMENT_CLICKED.",
+      "make_initial_state": "Function returning a JSON-friendly state dictionary.",
+      "create": "Function that builds widgets and stores important widget handles in record[\"widgets\"].",
+      "reduce_event": "Function that handles semantic events and returns new_state, effects.",
+      "project": "Function that updates widgets from record[\"state\"].",
+      "register": "Function that calls register_window_kind()."
+    },
+    "callback-rule": "Tkinter callbacks should usually post semantic events with post_event_to_window(record[\"window_id\"], event).",
+    "state-rule": "Reducer state should not store Tk widgets, Toplevels, function references, open files, threads, queues, or other live Python runtime objects.",
+    "widget-rule": "Runtime-only widget handles belong in record[\"widgets\"]."
+  },
+  "minimal-example": {
+    "description": "Small single-window counter pattern.",
+    "code": [
+      "import tkinter as tk",
+      "import tkvillage as village",
+      "",
+      "MAIN_WINDOW = \"main\"",
+      "INCREMENT_CLICKED = \"INCREMENT_CLICKED\"",
+      "",
+      "def make_initial_state(_rt, _key=None, _payload=None):",
+      "    return {\"count\": 0, \"status\": \"Ready\"}",
+      "",
+      "def create(_rt, record):",
+      "    label = tk.Label(record[\"toplevel\"])",
+      "    label.grid(row=0, column=0)",
+      "    button = tk.Button(",
+      "        record[\"toplevel\"],",
+      "        text=\"Increment\",",
+      "        command=lambda: village.post_event_to_window(record[\"window_id\"], {\"type\": INCREMENT_CLICKED})",
+      "    )",
+      "    button.grid(row=1, column=0)",
+      "    record[\"widgets\"][\"label\"] = label",
+      "",
+      "def reduce_event(_rt, state, event):",
+      "    if event[\"type\"] == INCREMENT_CLICKED:",
+      "        new_state = dict(state)",
+      "        new_state[\"count\"] += 1",
+      "        new_state[\"status\"] = f\"Clicked {new_state['count']} time(s)\"",
+      "        return new_state, [{\"type\": \"LOG\", \"message\": \"incremented\"}]",
+      "    return state, []",
+      "",
+      "def project(_rt, record):",
+      "    record[\"widgets\"][\"label\"].configure(text=record[\"state\"][\"status\"])",
+      "",
+      "village.create_app(\"example\", \".example\")",
+      "village.register_window_kind(MAIN_WINDOW, create=create, make_initial_state=make_initial_state, reduce_event=reduce_event, project=project)",
+      "village.summon_window(MAIN_WINDOW)",
+      "village.run()"
+    ]
+  },
+  "runtime-state": {
+    "import-pattern": "import tkvillage.app as rt",
+    "g-members": [
+      "name",
+      "root",
+      "project_dir",
+      "is_running",
+      "test_mode",
+      "strict_effects",
+      "tick_interval_ms",
+      "tick_after_id",
+      "tick_count",
+      "created_at",
+      "max_log_entries"
+    ],
+    "container-globals": [
+      "config_declarations",
+      "config_values",
+      "window_kinds",
+      "windows",
+      "windows_by_instance_key",
+      "targets",
+      "runtime_objects",
+      "event_log",
+      "effect_log",
+      "message_log",
+      "runtime_log",
+      "worker_records",
+      "debug",
+      "id_counters"
+    ],
+    "reset-rule": "reset_app() preserves dictionary and list identities. Do not write code that depends on replacing these containers.",
+    "data-dictionary": "See docs/raw/0015__data-dictionary_app.json for detailed runtime data definitions."
+  },
+  "window-policies": {
+    "singleton": {
+      "meaning": "At most one live window exists for the window kind.",
+      "instance-key": "<window-kind>:singleton",
+      "summon-behavior": "summon_window() raises the existing window if present, otherwise realizes a new one."
+    },
+    "per-key": {
+      "meaning": "At most one live window exists for each caller-provided key.",
+      "instance-key": "<window-kind>:<key>",
+      "summon-behavior": "summon_window(kind, key=...) reuses a matching live window or realizes a new one.",
+      "important-rule": "key is required."
+    },
+    "free-instance": {
+      "meaning": "Each summon creates a fresh independent window.",
+      "instance-key": "<window-kind>:<generated-id>",
+      "summon-behavior": "summon_window() always realizes a new live window."
+    },
+    "embedded-and-modal": {
+      "current-status": "Names are recognized as multiplicity values, but v1 raises NotImplementedError for embedded and modal registrations."
+    }
+  },
+  "event-and-effect-flow": {
+    "sequence": [
+      "Widget callback posts a semantic event to a target inbox.",
+      "tick_once() drains service targets.",
+      "tick_once() drains window event queues.",
+      "For each window event, reduce_window_event() calls the window kind reducer.",
+      "Reducer returns new_state and effects.",
+      "Runtime stores new_state in the window record and target state.",
+      "Runtime routes effects.",
+      "Window is marked for projection.",
+      "project_dirty_windows() calls project() for dirty windows."
+    ],
+    "semantic-event-shape": {
+      "type": "EVENT_NAME",
+      "additional-fields": "event-specific JSON-friendly data"
+    },
+    "reducer-output-shape": "new_state, effects",
+    "effect-types-currently-routed": [
+      "POST_EVENT",
+      "SEND_MESSAGE",
+      "SUMMON_WINDOW",
+      "CLOSE_WINDOW",
+      "DESTROY_WINDOW",
+      "REQUEST_PROJECT",
+      "LOG",
+      "SHOW_MESSAGE_BOX"
+    ]
+  },
+  "services-and-message-routing": {
+    "service-target": "A service target is a non-window target with an inbox, handler, state dictionary, and active flag.",
+    "register-service": "register_service_target(target_id, handler, state=None)",
+    "handler-contract": "handler(rt, target, event) returns effects or None.",
+    "message-shape": {
+      "type": "MESSAGE",
+      "source_id": "optional source target id",
+      "message": "caller-provided payload"
+    },
+    "use-case": "Use services for app-level coordinators, autosave managers, debug tools, or other non-window participants that should receive queued input."
+  },
+  "configuration": {
+    "config-location": "rt.g[\"project_dir\"] / \"config.json\"",
+    "declare-config": "declare_config(name, default=None, type=\"string\", description=\"\", choices=None)",
+    "supported-types": [
+      "string",
+      "int",
+      "float",
+      "bool",
+      "path",
+      "choice"
+    ],
+    "important-behavior": [
+      "set_config() declares an undeclared key automatically using an inferred type.",
+      "path values are pathlib.Path objects in memory and strings in config.json.",
+      "choice values must be included in choices.",
+      "bool strings true/yes/on/1 become True; false/no/off/0 become False."
+    ]
+  },
+  "debugging": {
+    "toggle": "toggle_debug() flips rt.debug[\"enabled\"]. When turning on, it summons the TkVillage runtime dashboard.",
+    "keyboard-shortcut": "Ctrl+Shift+D is installed on the root by create_app() when a root exists.",
+    "snapshot": "get_debug_snapshot(selected_window_id=None) returns a JSON-friendly runtime summary.",
+    "clipboard": "copy_debug_snapshot() writes the JSON snapshot text to the Tk clipboard when a root exists.",
+    "debug-dashboard-kind": "tkvillage-debug-dashboard"
+  },
+  "testing": {
+    "test-mode": "create_app(test_mode=True) causes tick_once() to re-raise tick exceptions instead of only logging them.",
+    "manual-ticks": "Use tick_once() or run_ticks(count) to advance the runtime without entering mainloop.",
+    "run-until": "testing.run_until(predicate, timeout_ms=1000, max_ticks=1000) advances ticks until a condition is true or a limit is reached.",
+    "tk-availability": "Tests that create Tk roots should be prepared to skip when the host Python/Tcl/Tk install is broken or unavailable."
+  },
+  "llm-coding-guidelines": [
+    "Keep window modules obvious and inspectable.",
+    "Define semantic event names before writing callbacks.",
+    "Post events from callbacks; do not bury important application behavior inside widget commands.",
+    "Reducers should copy or construct new semantic state and return effects.",
+    "Projection should update widgets from state and avoid becoming authority.",
+    "Do not put Tk widgets or Toplevels in reducer state.",
+    "Use rt only for runtime registries and debugging, not as a place to hide domain logic.",
+    "Prefer small dictionaries, explicit keys, and stable symbolic strings.",
+    "When adding a public function, update docs/raw/0022__tkvillage-system-api-reference.json."
+  ],
+  "common-pitfalls": [
+    {
+      "pitfall": "Registering a per-key window kind and summoning it without key.",
+      "result": "ValueError.",
+      "fix": "Call summon_window(\"kind\", key=object_id)."
+    },
+    {
+      "pitfall": "Putting tkinter widget objects into reducer state.",
+      "result": "State is no longer JSON-clean or debug-friendly.",
+      "fix": "Put widgets in record[\"widgets\"]."
+    },
+    {
+      "pitfall": "Calling project code directly inside a reducer.",
+      "result": "Reducer boundary is violated.",
+      "fix": "Return an effect or let dirty-window projection run after reduction."
+    },
+    {
+      "pitfall": "Expecting embedded or modal window policies to work in v1.",
+      "result": "NotImplementedError during registration.",
+      "fix": "Use singleton, per-key, or free-instance for now."
+    }
+  ],
+  "related-documents": {
+    "data-dictionary": "docs/raw/0015__data-dictionary_app.json",
+    "api-reference": "docs/raw/0022__tkvillage-system-api-reference.json",
+    "kernel-spec": "docs/raw/0010__tkvillage_kernel_spec_v1.json"
+  }
+}
