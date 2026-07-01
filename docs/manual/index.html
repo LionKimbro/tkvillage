@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TkVillage Manual</title>
+  <link rel="stylesheet" href="assets/manual.css">
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <a class="brand" href="index.html"><strong>TkVillage</strong><span>Human manual</span></a>
+      <nav>
+        <div class="nav-group">
+          <h2>Start</h2>
+          <a href="index.html">Home</a>
+          <a href="tutorial/index.html">Tutorial</a>
+          <a href="tutorial/quick-start.html">Quick Start</a>
+          <a href="tutorial/counter-window.html">Counter Window</a>
+        </div>
+        <div class="nav-group">
+          <h2>Mental Model</h2>
+          <a href="mental-model/overview.html">Overview</a>
+          <a href="mental-model/window-kinds.html">Window Kinds</a>
+          <a href="mental-model/windows.html">Windows</a>
+          <a href="mental-model/events-effects.html">Events and Effects</a>
+          <a href="mental-model/tick-loop.html">Tick Loop</a>
+          <a href="mental-model/runtime-state.html">Runtime State</a>
+          <a href="mental-model/shutdown.html">Shutdown</a>
+        </div>
+        <div class="nav-group">
+          <h2>Functions</h2>
+          <a href="functions/all-functions.html">All Functions</a>
+          <a href="functions/window-kind-functions.html">Window-Kind Functions</a>
+          <a href="functions/windows-functions.html">Window Functions</a>
+          <a href="functions/events-messages-functions.html">Events and Messages</a>
+          <a href="functions/config-functions.html">Config Functions</a>
+          <a href="functions/runtime-functions.html">Runtime Functions</a>
+          <a href="functions/effects-ticks-debug-functions.html">Effects, Ticks, Debug</a>
+        </div>
+      </nav>
+    </aside>
+    <main class="content">
+      <section class="hero">
+        <h1>TkVillage</h1>
+        <p>TkVillage is a small, inspectable runtime for modular Tkinter apps: a hidden root, summonable Toplevel windows, reducer-owned state, queued semantic events, explicit effects, and a periodic tick loop.</p>
+      </section>
+
+      <div class="grid">
+        <article class="card">
+          <h3>Learn by doing</h3>
+          <p>Start with the tutorial and build the shape of a TkVillage application before reading every detail.</p>
+          <p><a href="tutorial/quick-start.html">Open the quick start</a></p>
+        </article>
+        <article class="card">
+          <h3>Build the picture</h3>
+          <p>The mental-model pages explain why window kinds, windows, targets, events, effects, and ticks are separate things.</p>
+          <p><a href="mental-model/overview.html">Read the overview</a></p>
+        </article>
+        <article class="card">
+          <h3>Find the call</h3>
+          <p>The function section has one complete reference plus smaller local indexes into it.</p>
+          <p><a href="functions/all-functions.html">Open all functions</a></p>
+        </article>
+      </div>
+
+      <h2>The Runtime Shape</h2>
+      <div class="flow">
+        <div data-step="1">Declare the app with <code>declare_app({...})</code>.</div>
+        <div data-step="2">Register window kinds with creation, reducer, and projection functions.</div>
+        <div data-step="3">Summon windows. TkVillage creates or raises Toplevels according to the declared policy.</div>
+        <div data-step="4">Widget callbacks post semantic events instead of mutating app truth directly.</div>
+        <div data-step="5">Each tick drains queues, runs reducers, routes effects, calls hooks, projects dirty windows, and checks shutdown.</div>
+      </div>
+
+      <div class="callout">
+        <strong>Design rule:</strong> pass only what varies. TkVillage does not pass the runtime module into callbacks. Import <code>tkvillage.app</code> directly only when a callback genuinely needs runtime inspection.
+      </div>
+
+      <h2>Recommended Reading Order</h2>
+      <ol>
+        <li><a href="tutorial/quick-start.html">Quick Start</a></li>
+        <li><a href="mental-model/overview.html">Mental Model Overview</a></li>
+        <li><a href="mental-model/window-kinds.html">Window Kinds</a> and <a href="mental-model/windows.html">Windows</a></li>
+        <li><a href="functions/all-functions.html">All Functions</a> when you need exact signatures</li>
+      </ol>
+
+      <p class="footer">Generated for TkVillage from the current runtime docs and source. Raw LLM-facing documents remain in <code>docs/raw/</code>.</p>
+    </main>
+  </div>
+  <script src="assets/nav.js"></script>
+</body>
+</html>

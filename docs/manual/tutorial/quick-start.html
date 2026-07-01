@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quick Start - TkVillage</title>
+  <link rel="stylesheet" href="../assets/manual.css">
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <a class="brand" href="../index.html"><strong>TkVillage</strong><span>Human manual</span></a>
+      <nav>
+        <div class="nav-group"><h2>Start</h2><a href="../index.html">Home</a><a href="index.html">Tutorial</a><a href="quick-start.html">Quick Start</a><a href="counter-window.html">Counter Window</a><a href="shutdown-config.html">Shutdown and Config</a><a href="testing-debugging.html">Testing and Debugging</a></div>
+        <div class="nav-group"><h2>Mental Model</h2><a href="../mental-model/overview.html">Overview</a><a href="../mental-model/window-kinds.html">Window Kinds</a><a href="../mental-model/windows.html">Windows</a><a href="../mental-model/events-effects.html">Events and Effects</a><a href="../mental-model/tick-loop.html">Tick Loop</a><a href="../mental-model/runtime-state.html">Runtime State</a><a href="../mental-model/shutdown.html">Shutdown</a></div>
+        <div class="nav-group"><h2>Functions</h2><a href="../functions/all-functions.html">All Functions</a><a href="../functions/window-kind-functions.html">Window-Kind Functions</a><a href="../functions/windows-functions.html">Window Functions</a><a href="../functions/events-messages-functions.html">Events and Messages</a><a href="../functions/config-functions.html">Config Functions</a><a href="../functions/runtime-functions.html">Runtime Functions</a><a href="../functions/effects-ticks-debug-functions.html">Effects, Ticks, Debug</a></div>
+      </nav>
+    </aside>
+    <main class="content">
+      <section class="hero">
+        <h1>Quick Start</h1>
+        <p>One process, one runtime, one hidden Tk root, many summonable Toplevel windows.</p>
+      </section>
+      <h2>1. Declare the Application</h2>
+      <p>Use one dictionary. The shutdown policy is required on purpose; a TkVillage app should say how it exits at the start.</p>
+      <pre><code>import tkvillage as village
+
+village.declare_app({
+    "name": "my-app",
+    "project-dir-name": ".my-app",
+    "shutdown-policy": "on-last-window-close",
+    "shutdown-window-kind": None,
+    "on-shutdown": None,
+})</code></pre>
+      <h2>2. Register a Window Kind</h2>
+      <p>A window kind is a recipe. It does not mean a window exists yet.</p>
+      <pre><code>village.register_window_kind(
+    "main",
+    title="My App",
+    multiplicity="singleton",
+    create=create,
+    make_initial_state=make_initial_state,
+    reduce_event=reduce_event,
+    project=project,
+)</code></pre>
+      <h2>3. Summon and Run</h2>
+      <pre><code>village.summon_window("main")
+village.run()</code></pre>
+      <div class="callout">
+        The runtime module is not passed to callbacks. If advanced code needs runtime state, import <code>tkvillage.app</code> directly.
+      </div>
+      <h2>Next</h2>
+      <p>Build a complete counter window in <a href="counter-window.html">the next tutorial page</a>.</p>
+    </main>
+  </div>
+  <script src="../assets/nav.js"></script>
+</body>
+</html>

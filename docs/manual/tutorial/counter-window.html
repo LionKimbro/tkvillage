@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Counter Window - TkVillage</title>
+  <link rel="stylesheet" href="../assets/manual.css">
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <a class="brand" href="../index.html"><strong>TkVillage</strong><span>Human manual</span></a>
+      <nav>
+        <div class="nav-group"><h2>Start</h2><a href="../index.html">Home</a><a href="index.html">Tutorial</a><a href="quick-start.html">Quick Start</a><a href="counter-window.html">Counter Window</a><a href="shutdown-config.html">Shutdown and Config</a><a href="testing-debugging.html">Testing and Debugging</a></div>
+        <div class="nav-group"><h2>Mental Model</h2><a href="../mental-model/overview.html">Overview</a><a href="../mental-model/window-kinds.html">Window Kinds</a><a href="../mental-model/windows.html">Windows</a><a href="../mental-model/events-effects.html">Events and Effects</a><a href="../mental-model/tick-loop.html">Tick Loop</a><a href="../mental-model/runtime-state.html">Runtime State</a><a href="../mental-model/shutdown.html">Shutdown</a></div>
+        <div class="nav-group"><h2>Functions</h2><a href="../functions/all-functions.html">All Functions</a><a href="../functions/window-kind-functions.html">Window-Kind Functions</a><a href="../functions/windows-functions.html">Window Functions</a><a href="../functions/events-messages-functions.html">Events and Messages</a><a href="../functions/config-functions.html">Config Functions</a><a href="../functions/runtime-functions.html">Runtime Functions</a><a href="../functions/effects-ticks-debug-functions.html">Effects, Ticks, Debug</a></div>
+      </nav>
+    </aside>
+    <main class="content">
+      <section class="hero">
+        <h1>Counter Window</h1>
+        <p>A complete window module has semantic event names, JSON-clean reducer state, Tk widget creation, reducer logic, and projection.</p>
+      </section>
+      <pre><code>from __future__ import annotations
+
+import tkinter as tk
+import tkvillage as village
+
+MAIN_WINDOW = "main"
+INCREMENT_CLICKED = "INCREMENT_CLICKED"
+
+def make_initial_state(key=None, payload=None):
+    return {"count": 0, "status": "Ready"}
+
+def create(record):
+    top = record["toplevel"]
+    label = tk.Label(top)
+    label.grid(row=0, column=0, padx=12, pady=(12, 6), sticky="ew")
+
+    button = tk.Button(
+        top,
+        text="Increment",
+        command=lambda: village.post_event_to_window(
+            record["window_id"],
+            {"type": INCREMENT_CLICKED},
+        ),
+    )
+    button.grid(row=1, column=0, padx=12, pady=(0, 12), sticky="ew")
+    record["widgets"]["label"] = label
+
+def reduce_event(state, event):
+    if event["type"] == INCREMENT_CLICKED:
+        new_state = dict(state)
+        new_state["count"] += 1
+        new_state["status"] = f"Clicked {new_state['count']} time(s)"
+        return new_state, [{"type": "LOG", "message": "incremented"}]
+    return state, []
+
+def project(record):
+    record["widgets"]["label"].configure(text=record["state"]["status"])</code></pre>
+      <h2>What Matters</h2>
+      <ul>
+        <li><code>create(record)</code> stores widgets in <code>record["widgets"]</code>.</li>
+        <li>The button command translates a Tk callback into a semantic event.</li>
+        <li><code>reduce_event(state, event)</code> owns application truth.</li>
+        <li><code>project(record)</code> updates widgets from state.</li>
+      </ul>
+      <div class="warning callout">Do not put Tk widgets in reducer state. Widgets live in <code>record["widgets"]</code>; semantic state lives in <code>record["state"]</code>.</div>
+    </main>
+  </div>
+  <script src="../assets/nav.js"></script>
+</body>
+</html>

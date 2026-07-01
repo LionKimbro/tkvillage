@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Windows - TkVillage</title><link rel="stylesheet" href="../assets/manual.css"></head>
+<body><div class="shell"><aside class="sidebar"><a class="brand" href="../index.html"><strong>TkVillage</strong><span>Human manual</span></a><nav><div class="nav-group"><h2>Start</h2><a href="../index.html">Home</a><a href="../tutorial/index.html">Tutorial</a></div><div class="nav-group"><h2>Mental Model</h2><a href="overview.html">Overview</a><a href="window-kinds.html">Window Kinds</a><a href="windows.html">Windows</a><a href="events-effects.html">Events and Effects</a><a href="tick-loop.html">Tick Loop</a><a href="runtime-state.html">Runtime State</a><a href="shutdown.html">Shutdown</a></div><div class="nav-group"><h2>Functions</h2><a href="../functions/all-functions.html">All Functions</a><a href="../functions/windows-functions.html">Window Functions</a></div></nav></aside><main class="content">
+<section class="hero"><h1>Windows</h1><p>A window is a live Toplevel plus a window record. The record is the runtime handle that connects Tk widgets, reducer state, event queues, and lifecycle metadata.</p></section>
+<h2>Window Record</h2>
+<table><tr><th>Field</th><th>Meaning</th></tr><tr><td><code>window_id</code></td><td>Unique live id, also the target id.</td></tr><tr><td><code>window_kind</code></td><td>The registered kind that produced this window.</td></tr><tr><td><code>instance_key</code></td><td>Lookup key for singleton/per-key reuse.</td></tr><tr><td><code>toplevel</code></td><td>Live <code>tkinter.Toplevel</code>.</td></tr><tr><td><code>state</code></td><td>Reducer-owned semantic dictionary.</td></tr><tr><td><code>event_queue</code></td><td>Queued semantic events.</td></tr><tr><td><code>widgets</code></td><td>Runtime-only widget handles.</td></tr><tr><td><code>needs_project</code></td><td>Whether projection should run.</td></tr></table>
+<h2>State vs Widgets</h2>
+<p>State is the debug-friendly truth. Widgets are live toolkit objects. Projection moves state into widgets; reducers should not directly configure widgets.</p>
+<div class="callout">Use <code>record["widgets"]</code> for Tk objects and <code>record["state"]</code> for semantic data.</div>
+<p>Function map: <a href="../functions/windows-functions.html">window function index</a>.</p>
+</main></div><script src="../assets/nav.js"></script></body></html>

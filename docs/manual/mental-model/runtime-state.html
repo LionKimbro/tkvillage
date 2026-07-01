@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Runtime State - TkVillage</title><link rel="stylesheet" href="../assets/manual.css"></head>
+<body><div class="shell"><aside class="sidebar"><a class="brand" href="../index.html"><strong>TkVillage</strong><span>Human manual</span></a><nav><div class="nav-group"><h2>Start</h2><a href="../index.html">Home</a><a href="../tutorial/index.html">Tutorial</a></div><div class="nav-group"><h2>Mental Model</h2><a href="overview.html">Overview</a><a href="window-kinds.html">Window Kinds</a><a href="windows.html">Windows</a><a href="events-effects.html">Events and Effects</a><a href="tick-loop.html">Tick Loop</a><a href="runtime-state.html">Runtime State</a><a href="shutdown.html">Shutdown</a></div><div class="nav-group"><h2>Functions</h2><a href="../functions/all-functions.html">All Functions</a><a href="../functions/runtime-functions.html">Runtime Functions</a></div></nav></aside><main class="content">
+<section class="hero"><h1>Runtime State</h1><p>TkVillage keeps runtime data in <code>tkvillage.app</code>. Scalars live in <code>g</code>; registries and logs live in explicit module-level dictionaries and lists.</p></section>
+<h2><code>rt.g</code></h2>
+<p><code>g</code> contains scalar-ish runtime values: name, root, project_dir, running flags, tick interval, tick count, shutdown policy, shutdown handler, and log limits.</p>
+<h2>Container Globals</h2>
+<ul class="function-list"><li><code>config_declarations</code></li><li><code>config_values</code></li><li><code>window_kinds</code></li><li><code>windows</code></li><li><code>windows_by_instance_key</code></li><li><code>targets</code></li><li><code>runtime_objects</code></li><li><code>event_log</code></li><li><code>effect_log</code></li><li><code>message_log</code></li><li><code>runtime_log</code></li><li><code>worker_records</code></li><li><code>debug</code></li><li><code>id_counters</code></li></ul>
+<div class="callout"><code>reset_app()</code> preserves dictionary and list identities with <code>clear()</code> and <code>update()</code>. Do not reassign these containers in application code.</div>
+<p>For the full data dictionary, see <code>docs/raw/0015__data-dictionary_app.json</code>.</p>
+</main></div><script src="../assets/nav.js"></script></body></html>

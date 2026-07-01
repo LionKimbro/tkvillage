@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Tick Loop - TkVillage</title><link rel="stylesheet" href="../assets/manual.css"></head>
+<body><div class="shell"><aside class="sidebar"><a class="brand" href="../index.html"><strong>TkVillage</strong><span>Human manual</span></a><nav><div class="nav-group"><h2>Start</h2><a href="../index.html">Home</a><a href="../tutorial/index.html">Tutorial</a></div><div class="nav-group"><h2>Mental Model</h2><a href="overview.html">Overview</a><a href="window-kinds.html">Window Kinds</a><a href="windows.html">Windows</a><a href="events-effects.html">Events and Effects</a><a href="tick-loop.html">Tick Loop</a><a href="runtime-state.html">Runtime State</a><a href="shutdown.html">Shutdown</a></div><div class="nav-group"><h2>Functions</h2><a href="../functions/all-functions.html">All Functions</a><a href="../functions/effects-ticks-debug-functions.html">Effects, Ticks, Debug</a></div></nav></aside><main class="content">
+<section class="hero"><h1>Tick Loop</h1><p>The tick is TkVillage's heartbeat. It turns queued input into state changes, routes effects, projects windows, and checks whether shutdown should begin.</p></section>
+<div class="flow">
+  <div data-step="1">Increment <code>rt.g["tick_count"]</code>.</div>
+  <div data-step="2">Drain service target inboxes by calling <code>handler(target, event)</code>.</div>
+  <div data-step="3">Drain window event queues by calling <code>reduce_event(state, event)</code>.</div>
+  <div data-step="4">Route returned effects.</div>
+  <div data-step="5">Call each window <code>on_tick(record)</code> hook.</div>
+  <div data-step="6">Project dirty windows with <code>project(record)</code>.</div>
+  <div data-step="7">Evaluate shutdown policy at tick end.</div>
+</div>
+<div class="warning callout">A reducer should not perform long-running work. Use queued services or future worker facilities for work that should not block the UI.</div>
+</main></div><script src="../assets/nav.js"></script></body></html>
