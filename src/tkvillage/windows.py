@@ -11,20 +11,10 @@ from .root import ensure_root
 MULTIPLICITIES = {"singleton", "per-key", "free-instance", "embedded", "modal"}
 
 
-def register_window_kind(
-    window_kind,
-    title=None,
-    multiplicity="singleton",
-    create=None,
-    make_initial_state=None,
-    reduce_event=None,
-    project=None,
-    on_show=None,
-    on_close=None,
-    on_destroy=None,
-    on_tick=None,
-    debug_label=None,
-):
+def register_window_kind(spec):
+    window_kind = spec["window-kind"]
+    title = spec.get("title")
+    multiplicity = spec.get("multiplicity", "singleton")
     if multiplicity not in MULTIPLICITIES:
         raise ValueError(f"Unknown window multiplicity: {multiplicity}")
     if multiplicity in {"embedded", "modal"}:
@@ -33,15 +23,15 @@ def register_window_kind(
         "window_kind": window_kind,
         "title": title or window_kind,
         "multiplicity": multiplicity,
-        "create": create or default_create,
-        "make_initial_state": make_initial_state or default_initial_state,
-        "reduce_event": reduce_event or default_reduce_event,
-        "project": project or default_project,
-        "on_show": on_show,
-        "on_close": on_close,
-        "on_destroy": on_destroy,
-        "on_tick": on_tick,
-        "debug_label": debug_label or title or window_kind,
+        "create": spec.get("create") or default_create,
+        "make_initial_state": spec.get("make-initial-state") or default_initial_state,
+        "reduce_event": spec.get("reduce-event") or default_reduce_event,
+        "project": spec.get("project") or default_project,
+        "on_show": spec.get("on-show"),
+        "on_close": spec.get("on-close"),
+        "on_destroy": spec.get("on-destroy"),
+        "on_tick": spec.get("on-tick"),
+        "debug_label": spec.get("debug-label") or title or window_kind,
     }
     rt.window_kinds[window_kind] = record
     return record

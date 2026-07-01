@@ -170,12 +170,14 @@ def register_counter_kind(kind="counter", multiplicity="singleton"):
         record["state"]["projected_count"] = record["state"]["count"]
 
     village.register_window_kind(
-        kind,
-        title=kind,
-        multiplicity=multiplicity,
-        make_initial_state=make_initial_state,
-        reduce_event=reduce_event,
-        project=project,
+        {
+            "window-kind": kind,
+            "title": kind,
+            "multiplicity": multiplicity,
+            "make-initial-state": make_initial_state,
+            "reduce-event": reduce_event,
+            "project": project,
+        }
     )
 
 
@@ -270,7 +272,9 @@ def test_config_declares_coerces_and_persists(tmp_path):
             "on-shutdown": None,
         }
     )
-    village.declare_config("ui.scale", 1, "int", "UI scale")
+    village.declare_config(
+        {"name": "ui.scale", "default": 1, "type": "int", "description": "UI scale"}
+    )
     village.set_config("ui.scale", "3")
 
     village.declare_app(
@@ -285,7 +289,9 @@ def test_config_declares_coerces_and_persists(tmp_path):
             "on-shutdown": None,
         }
     )
-    village.declare_config("ui.scale", 1, "int", "UI scale")
+    village.declare_config(
+        {"name": "ui.scale", "default": 1, "type": "int", "description": "UI scale"}
+    )
     village.load_config()
 
     assert village.get_config("ui.scale") == 3

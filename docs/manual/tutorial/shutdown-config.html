@@ -42,7 +42,13 @@ village.declare_app({
 village.request_shutdown("user requested exit")</code></pre>
       <h2>Configuration</h2>
       <p>Config declarations describe type and intent. Values are saved to <code>config.json</code> under <code>rt.g["project_dir"]</code>.</p>
-      <pre><code>village.declare_config("theme", "light", "choice", "UI theme", ["light", "dark"])
+      <pre><code>village.declare_config({
+    "name": "theme",
+    "default": "light",
+    "type": "choice",
+    "description": "UI theme",
+    "choices": ["light", "dark"],
+})
 village.set_config("theme", "dark")
 theme = village.get_config("theme")</code></pre>
     </main>

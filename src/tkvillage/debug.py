@@ -15,14 +15,16 @@ def register_debug_windows():
     if DEBUG_DASHBOARD_KIND in rt.window_kinds:
         return
     register_window_kind(
-        DEBUG_DASHBOARD_KIND,
-        title="TkVillage Runtime",
-        multiplicity="singleton",
-        create=create_debug_dashboard,
-        make_initial_state=make_debug_state,
-        reduce_event=reduce_debug_event,
-        project=project_debug_dashboard,
-        debug_label="TkVillage Runtime Dashboard",
+        {
+            "window-kind": DEBUG_DASHBOARD_KIND,
+            "title": "TkVillage Runtime",
+            "multiplicity": "singleton",
+            "create": create_debug_dashboard,
+            "make-initial-state": make_debug_state,
+            "reduce-event": reduce_debug_event,
+            "project": project_debug_dashboard,
+            "debug-label": "TkVillage Runtime Dashboard",
+        }
     )
 
 

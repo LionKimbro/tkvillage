@@ -34,15 +34,15 @@ village.declare_app({
 })</code></pre>
       <h2>2. Register a Window Kind</h2>
       <p>A window kind is a recipe. It does not mean a window exists yet.</p>
-      <pre><code>village.register_window_kind(
-    "main",
-    title="My App",
-    multiplicity="singleton",
-    create=create,
-    make_initial_state=make_initial_state,
-    reduce_event=reduce_event,
-    project=project,
-)</code></pre>
+      <pre><code>village.register_window_kind({
+    "window-kind": "main",
+    "title": "My App",
+    "multiplicity": "singleton",
+    "create": create,
+    "make-initial-state": make_initial_state,
+    "reduce-event": reduce_event,
+    "project": project,
+})</code></pre>
       <h2>3. Summon and Run</h2>
       <pre><code>village.summon_window("main")
 village.run()</code></pre>

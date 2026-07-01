@@ -84,12 +84,12 @@
     {
       "step": "declare-config",
       "description": "Optionally declare configuration keys before loading or using values. If declare_app() has already loaded config, call load_config() again after declarations when you need persisted values applied to new declarations.",
-      "code": "village.declare_config(\"ui.scale\", 1, \"int\", \"UI scale\")"
+      "code": "village.declare_config({\"name\": \"ui.scale\", \"default\": 1, \"type\": \"int\", \"description\": \"UI scale\"})"
     },
     {
       "step": "register-window-kinds",
       "description": "Register each window kind with a stable name, multiplicity, create function, make_initial_state function, reducer, and projection.",
-      "code": "village.register_window_kind(\"main\", create=create, make_initial_state=make_initial_state, reduce_event=reduce_event, project=project)"
+      "code": "village.register_window_kind({\"window-kind\": \"main\", \"create\": create, \"make-initial-state\": make_initial_state, \"reduce-event\": reduce_event, \"project\": project})"
     },
     {
       "step": "summon-initial-window",
@@ -111,7 +111,7 @@
       "create": "Function that builds widgets and stores important widget handles in record[\"widgets\"].",
       "reduce_event": "Function that handles semantic events and returns new_state, effects.",
       "project": "Function that updates widgets from record[\"state\"].",
-      "register": "Function that calls register_window_kind()."
+      "register": "Function that calls register_window_kind(spec)."
     },
     "callback-rule": "Tkinter callbacks should usually post semantic events with post_event_to_window(record[\"window_id\"], event).",
     "state-rule": "Reducer state should not store Tk widgets, Toplevels, function references, open files, threads, queues, or other live Python runtime objects.",
@@ -158,7 +158,13 @@
       "    \"shutdown-window-kind\": None,",
       "    \"on-shutdown\": None,",
       "})",
-      "village.register_window_kind(MAIN_WINDOW, create=create, make_initial_state=make_initial_state, reduce_event=reduce_event, project=project)",
+      "village.register_window_kind({",
+      "    \"window-kind\": MAIN_WINDOW,",
+      "    \"create\": create,",
+      "    \"make-initial-state\": make_initial_state,",
+      "    \"reduce-event\": reduce_event,",
+      "    \"project\": project,",
+      "})",
       "village.summon_window(MAIN_WINDOW)",
       "village.run()"
     ]
@@ -268,7 +274,7 @@
   },
   "configuration": {
     "config-location": "rt.g[\"project_dir\"] / \"config.json\"",
-    "declare-config": "declare_config(name, default=None, type=\"string\", description=\"\", choices=None)",
+    "declare-config": "declare_config(spec)",
     "supported-types": [
       "string",
       "int",

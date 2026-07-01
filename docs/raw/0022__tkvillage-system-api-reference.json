@@ -270,14 +270,17 @@
     },
     "declare_config": {
       "module": "tkvillage.config",
-      "signature": "declare_config(name, default=None, type=\"string\", description=\"\", choices=None)",
-      "description": "Declare a typed configuration key.",
+      "signature": "declare_config(spec)",
+      "description": "Declare a typed configuration key from one dictionary.",
       "parameters": {
-        "name": "Configuration key string.",
-        "default": "Default value.",
-        "type": "One of string, int, float, bool, path, choice.",
-        "description": "Human-readable description.",
-        "choices": "Required list for choice config."
+        "spec": "Configuration declaration dictionary."
+      },
+      "spec-keys": {
+        "name": "Configuration key string. Required.",
+        "default": "Default value. Optional.",
+        "type": "One of string, int, float, bool, path, choice. Optional; defaults to string.",
+        "description": "Human-readable description. Optional.",
+        "choices": "Required list when type is choice."
       },
       "returns": "Config declaration record.",
       "raises": [
@@ -288,7 +291,7 @@
         "Writes rt.config_declarations[name].",
         "Initializes rt.config_values[name] to default if absent."
       ],
-      "example": "village.declare_config(\"theme\", \"light\", \"choice\", \"UI theme\", [\"light\", \"dark\"])"
+      "example": "village.declare_config({\"name\": \"theme\", \"default\": \"light\", \"type\": \"choice\", \"description\": \"UI theme\", \"choices\": [\"light\", \"dark\"]})"
     },
     "load_config": {
       "module": "tkvillage.config",
@@ -353,21 +356,24 @@
     },
     "register_window_kind": {
       "module": "tkvillage.windows",
-      "signature": "register_window_kind(window_kind, title=None, multiplicity=\"singleton\", create=None, make_initial_state=None, reduce_event=None, project=None, on_show=None, on_close=None, on_destroy=None, on_tick=None, debug_label=None)",
-      "description": "Register a summonable Toplevel window kind.",
+      "signature": "register_window_kind(spec)",
+      "description": "Register a summonable Toplevel window kind from one dictionary.",
       "parameters": {
-        "window_kind": "Stable string identifier.",
-        "title": "Window title; defaults to window_kind.",
-        "multiplicity": "singleton, per-key, or free-instance. embedded and modal are recognized but not implemented.",
-        "create": "Function create(record) that builds widgets.",
-        "make_initial_state": "Function make_initial_state(key=None, payload=None) returning state dict.",
-        "reduce_event": "Function reduce_event(state, event) returning new_state, effects.",
-        "project": "Function project(record) updating widgets from state.",
-        "on_show": "Optional hook on_show(record).",
-        "on_close": "Optional hook on_close(record); return False to cancel close.",
-        "on_destroy": "Optional hook on_destroy(record).",
-        "on_tick": "Optional hook on_tick(record) returning effects or None.",
-        "debug_label": "Human-readable debug label."
+        "spec": "Window-kind declaration dictionary using kebab-case public keys."
+      },
+      "spec-keys": {
+        "window-kind": "Stable string identifier. Required.",
+        "title": "Window title; defaults to window-kind.",
+        "multiplicity": "singleton, per-key, or free-instance. embedded and modal are recognized but not implemented. Optional; defaults to singleton.",
+        "create": "Function create(record) that builds widgets. Optional default creates a simple label.",
+        "make-initial-state": "Function make_initial_state(key=None, payload=None) returning state dict. Optional.",
+        "reduce-event": "Function reduce_event(state, event) returning new_state, effects. Optional.",
+        "project": "Function project(record) updating widgets from state. Optional.",
+        "on-show": "Optional hook on_show(record).",
+        "on-close": "Optional hook on_close(record); return False to cancel close.",
+        "on-destroy": "Optional hook on_destroy(record).",
+        "on-tick": "Optional hook on_tick(record) returning effects or None.",
+        "debug-label": "Human-readable debug label. Optional."
       },
       "returns": "Window kind record.",
       "side-effects": [

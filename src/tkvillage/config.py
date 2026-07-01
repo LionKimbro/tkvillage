@@ -13,7 +13,12 @@ def config_path():
     return rt.g["project_dir"] / "config.json"
 
 
-def declare_config(name, default=None, type="string", description="", choices=None):
+def declare_config(spec):
+    name = spec["name"]
+    default = spec.get("default")
+    type = spec.get("type", "string")
+    description = spec.get("description", "")
+    choices = spec.get("choices")
     if type not in CONFIG_TYPES:
         raise ValueError(f"Unknown config type: {type}")
     if type == "choice" and not choices:
@@ -61,7 +66,9 @@ def get_config(name):
 def set_config(name, value, persist=True):
     declaration = rt.config_declarations.get(name)
     if declaration is None:
-        declaration = declare_config(name, value, infer_config_type(value))
+        declaration = declare_config(
+            {"name": name, "default": value, "type": infer_config_type(value)}
+        )
     rt.config_values[name] = coerce_config_value(value, declaration)
     if persist:
         save_config()

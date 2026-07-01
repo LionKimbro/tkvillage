@@ -45,13 +45,15 @@ def project(record):
 
 def register():
     village.register_window_kind(
-        MAIN_WINDOW,
-        title="TkVillage Minimal App",
-        multiplicity="singleton",
-        create=create,
-        make_initial_state=make_initial_state,
-        reduce_event=reduce_event,
-        project=project,
+        {
+            "window-kind": MAIN_WINDOW,
+            "title": "TkVillage Minimal App",
+            "multiplicity": "singleton",
+            "create": create,
+            "make-initial-state": make_initial_state,
+            "reduce-event": reduce_event,
+            "project": project,
+        }
     )
 
 
