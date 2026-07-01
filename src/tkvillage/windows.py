@@ -77,7 +77,7 @@ def realize_window(kind, instance_key, key=None, payload=None):
     window_id = next_id("window")
     toplevel = tk.Toplevel(root)
     toplevel.title(kind["title"])
-    state = kind["make_initial_state"](rt, key, payload)
+    state = kind["make_initial_state"](key, payload)
     state.setdefault("window_id", window_id)
     state.setdefault("window_kind", kind["window_kind"])
     state.setdefault("instance_key", instance_key)
@@ -116,7 +116,7 @@ def realize_window(kind, instance_key, key=None, payload=None):
         "is_active": True,
     }
     toplevel.protocol("WM_DELETE_WINDOW", lambda win=window_id: close_window(win))
-    kind["create"](rt, record)
+    kind["create"](record)
     project_window(record)
     return record
 
@@ -133,7 +133,7 @@ def raise_window(window_id):
     record["last_shown_at"] = time.time()
     hook = rt.window_kinds[record["window_kind"]]["on_show"]
     if hook is not None:
-        hook(rt, record)
+        hook(record)
     return record
 
 
@@ -141,7 +141,7 @@ def close_window(window_id):
     record = rt.windows[window_id]
     hook = rt.window_kinds[record["window_kind"]]["on_close"]
     if hook is not None:
-        result = hook(rt, record)
+        result = hook(record)
         if result is False:
             return False
     destroy_window(window_id)
@@ -154,7 +154,7 @@ def destroy_window(window_id):
         return
     hook = rt.window_kinds[record["window_kind"]]["on_destroy"]
     if hook is not None:
-        hook(rt, record)
+        hook(record)
     record["is_open"] = False
     record["is_destroyed"] = True
     rt.windows_by_instance_key.pop(record["instance_key"], None)
@@ -168,7 +168,7 @@ def destroy_window(window_id):
 
 def project_window(record):
     kind = rt.window_kinds[record["window_kind"]]
-    kind["project"](rt, record)
+    kind["project"](record)
     record["needs_project"] = False
 
 
@@ -180,7 +180,7 @@ def list_windows():
     return list(rt.windows.values())
 
 
-def default_initial_state(_app, key=None, payload=None):
+def default_initial_state(key=None, payload=None):
     state = {}
     if key is not None:
         state["key"] = key
@@ -189,15 +189,15 @@ def default_initial_state(_app, key=None, payload=None):
     return state
 
 
-def default_create(_app, record):
+def default_create(record):
     label = tk.Label(record["toplevel"], text=record["debug_label"])
     label.grid(row=0, column=0, padx=12, pady=12)
     record["widgets"]["label"] = label
 
 
-def default_reduce_event(_app, state, _event):
+def default_reduce_event(state, _event):
     return state, []
 
 
-def default_project(_app, _record):
+def default_project(_record):
     return None

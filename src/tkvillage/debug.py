@@ -92,11 +92,11 @@ def summarize_window(record):
     }
 
 
-def make_debug_state(_app, _key=None, _payload=None):
+def make_debug_state(_key=None, _payload=None):
     return {"title": "TkVillage Runtime Dashboard"}
 
 
-def create_debug_dashboard(_app, record):
+def create_debug_dashboard(record):
     frame = tk.Frame(record["toplevel"])
     frame.grid(row=0, column=0, sticky="nsew")
     text = tk.Text(frame, width=88, height=28)
@@ -110,13 +110,13 @@ def create_debug_dashboard(_app, record):
     record["widgets"]["text"] = text
 
 
-def reduce_debug_event(_app, state, event):
+def reduce_debug_event(state, event):
     if event.get("type") == "REFRESH":
         return dict(state), []
     return state, []
 
 
-def project_debug_dashboard(_app, record):
+def project_debug_dashboard(record):
     text = record["widgets"].get("text")
     if text is None:
         return

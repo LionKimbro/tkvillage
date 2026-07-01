@@ -359,14 +359,14 @@
         "window_kind": "Stable string identifier.",
         "title": "Window title; defaults to window_kind.",
         "multiplicity": "singleton, per-key, or free-instance. embedded and modal are recognized but not implemented.",
-        "create": "Function create(rt, record) that builds widgets.",
-        "make_initial_state": "Function make_initial_state(rt, key=None, payload=None) returning state dict.",
-        "reduce_event": "Function reduce_event(rt, state, event) returning new_state, effects.",
-        "project": "Function project(rt, record) updating widgets from state.",
-        "on_show": "Optional hook on_show(rt, record).",
-        "on_close": "Optional hook on_close(rt, record); return False to cancel close.",
-        "on_destroy": "Optional hook on_destroy(rt, record).",
-        "on_tick": "Optional hook on_tick(rt, record) returning effects or None.",
+        "create": "Function create(record) that builds widgets.",
+        "make_initial_state": "Function make_initial_state(key=None, payload=None) returning state dict.",
+        "reduce_event": "Function reduce_event(state, event) returning new_state, effects.",
+        "project": "Function project(record) updating widgets from state.",
+        "on_show": "Optional hook on_show(record).",
+        "on_close": "Optional hook on_close(record); return False to cancel close.",
+        "on_destroy": "Optional hook on_destroy(record).",
+        "on_tick": "Optional hook on_tick(record) returning effects or None.",
         "debug_label": "Human-readable debug label."
       },
       "returns": "Window kind record.",
@@ -511,7 +511,7 @@
       "description": "Register a non-window queued target.",
       "parameters": {
         "target_id": "Stable target id string.",
-        "handler": "Function handler(rt, target, event) returning effects or None.",
+        "handler": "Function handler(target, event) returning effects or None.",
         "state": "Optional target-owned state dict."
       },
       "returns": "Target record.",
@@ -693,49 +693,49 @@
   },
   "callback-contracts": {
     "make_initial_state": {
-      "signature": "make_initial_state(rt, key=None, payload=None)",
+      "signature": "make_initial_state(key=None, payload=None)",
       "returns": "JSON-friendly state dictionary.",
       "called-by": "realize_window()"
     },
     "create": {
-      "signature": "create(rt, record)",
+      "signature": "create(record)",
       "returns": "Ignored.",
       "called-by": "realize_window()",
       "responsibility": "Build widgets in record[\"toplevel\"] and store important handles in record[\"widgets\"]."
     },
     "reduce_event": {
-      "signature": "reduce_event(rt, state, event)",
+      "signature": "reduce_event(state, event)",
       "returns": "new_state, effects",
       "called-by": "reduce_window_event() during tick_once()."
     },
     "project": {
-      "signature": "project(rt, record)",
+      "signature": "project(record)",
       "returns": "Ignored.",
       "called-by": "project_window().",
       "responsibility": "Update widgets from record[\"state\"]."
     },
     "on_show": {
-      "signature": "on_show(rt, record)",
+      "signature": "on_show(record)",
       "returns": "Ignored.",
       "called-by": "raise_window()."
     },
     "on_close": {
-      "signature": "on_close(rt, record)",
+      "signature": "on_close(record)",
       "returns": "False to cancel close; any other value allows close.",
       "called-by": "close_window()."
     },
     "on_destroy": {
-      "signature": "on_destroy(rt, record)",
+      "signature": "on_destroy(record)",
       "returns": "Ignored.",
       "called-by": "destroy_window()."
     },
     "on_tick": {
-      "signature": "on_tick(rt, record)",
+      "signature": "on_tick(record)",
       "returns": "Effects list or None.",
       "called-by": "tick_once()."
     },
     "service-handler": {
-      "signature": "handler(rt, target, event)",
+      "signature": "handler(target, event)",
       "returns": "Effects list or None.",
       "called-by": "tick_once() for non-window targets."
     }

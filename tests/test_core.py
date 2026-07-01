@@ -147,7 +147,7 @@ def test_on_window_close_waits_for_declared_kind_to_have_existed(tmp_path):
 
 
 def register_counter_kind(kind="counter", multiplicity="singleton"):
-    def make_initial_state(_app, key=None, payload=None):
+    def make_initial_state(key=None, payload=None):
         state = {"count": 0}
         if key is not None:
             state["key"] = key
@@ -155,7 +155,7 @@ def register_counter_kind(kind="counter", multiplicity="singleton"):
             state["payload"] = payload
         return state
 
-    def reduce_event(_app, state, event):
+    def reduce_event(state, event):
         if event["type"] == "INCREMENT":
             new_state = dict(state)
             new_state["count"] += event.get("amount", 1)
@@ -166,7 +166,7 @@ def register_counter_kind(kind="counter", multiplicity="singleton"):
             return new_state, []
         return state, []
 
-    def project(_app, record):
+    def project(record):
         record["state"]["projected_count"] = record["state"]["count"]
 
     village.register_window_kind(
@@ -244,7 +244,7 @@ def test_service_target_receives_queued_input(tmp_path):
     make_tk_app(tmp_path)
     seen = []
 
-    def handler(_app, target, event):
+    def handler(target, event):
         seen.append(event)
         target["state"]["handled"] = True
         return [{"type": "LOG", "message": "service handled"}]

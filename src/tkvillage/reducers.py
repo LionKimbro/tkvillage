@@ -5,7 +5,7 @@ from . import app as rt
 
 def reduce_window_event(record, event):
     kind = rt.window_kinds[record["window_kind"]]
-    new_state, effects = kind["reduce_event"](rt, record["state"], event)
+    new_state, effects = kind["reduce_event"](record["state"], event)
     record["state"] = new_state
     target = rt.targets[record["window_id"]]
     target["state"] = new_state

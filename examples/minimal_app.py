@@ -9,11 +9,11 @@ MAIN_WINDOW = "minimal-main"
 INCREMENT_CLICKED = "INCREMENT_CLICKED"
 
 
-def make_initial_state(_app, _key=None, _payload=None):
+def make_initial_state(_key=None, _payload=None):
     return {"count": 0, "status": "Ready"}
 
 
-def create(_app, record):
+def create(record):
     top = record["toplevel"]
     top.title("TkVillage Minimal App")
     label = tk.Label(top)
@@ -30,7 +30,7 @@ def create(_app, record):
     record["widgets"]["button"] = button
 
 
-def reduce_event(_app, state, event):
+def reduce_event(state, event):
     if event["type"] == INCREMENT_CLICKED:
         new_state = dict(state)
         new_state["count"] += 1
@@ -39,7 +39,7 @@ def reduce_event(_app, state, event):
     return state, []
 
 
-def project(_app, record):
+def project(record):
     record["widgets"]["label"].configure(text=record["state"]["status"])
 
 

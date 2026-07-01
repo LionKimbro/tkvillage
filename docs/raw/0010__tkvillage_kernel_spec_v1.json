@@ -356,18 +356,18 @@
   "window-module-contract": {
     "summary": "TkVillage window modules should follow a simple LLM-friendly contract so windows can be created, inspected, and modified predictably.",
     "recommended-module-functions": {
-      "register": "register(app) registers the window kind with the app.",
-      "make_initial_state": "make_initial_state(app, key=None, payload=None) returns a JSON-friendly state dictionary.",
-      "create": "create(app, record) builds widgets inside record.toplevel and populates record.widgets.",
-      "reduce_event": "reduce_event(app, state, event) returns new_state and effects.",
-      "project": "project(app, record) updates widgets from record.state.",
-      "on_show": "Optional on_show(app, record) hook.",
-      "on_close": "Optional on_close(app, record) hook. It may return close permission or effects.",
-      "on_destroy": "Optional on_destroy(app, record) cleanup hook.",
-      "on_tick": "Optional on_tick(app, record) hook."
+      "register": "register() registers the window kind with TkVillage.",
+      "make_initial_state": "make_initial_state(key=None, payload=None) returns a JSON-friendly state dictionary.",
+      "create": "create(record) builds widgets inside record.toplevel and populates record.widgets.",
+      "reduce_event": "reduce_event(state, event) returns new_state and effects.",
+      "project": "project(record) updates widgets from record.state.",
+      "on_show": "Optional on_show(record) hook.",
+      "on_close": "Optional on_close(record) hook. It may return close permission or effects.",
+      "on_destroy": "Optional on_destroy(record) cleanup hook.",
+      "on_tick": "Optional on_tick(record) hook."
     },
     "reducer-contract": {
-      "input": "app, state, event",
+      "input": "state, event",
       "output": "new_state, effects",
       "rules": {
         "no-widget-mutation": "Reducers should not directly mutate tkinter widgets.",

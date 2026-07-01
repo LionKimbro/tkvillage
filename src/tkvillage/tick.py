@@ -82,7 +82,7 @@ def drain_service_targets():
         handler = target["handler"]
         while target["inbox"]:
             event = target["inbox"].pop(0)
-            effects = handler(rt, target, event) or []
+            effects = handler(target, event) or []
             route_effects(effects, target_id)
 
 
@@ -90,7 +90,7 @@ def call_window_ticks():
     for record in list(rt.windows.values()):
         hook = rt.window_kinds[record["window_kind"]]["on_tick"]
         if hook is not None:
-            effects = hook(rt, record) or []
+            effects = hook(record) or []
             route_effects(effects, record["window_id"])
 
 
