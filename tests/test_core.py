@@ -8,11 +8,16 @@ import tkvillage.app as rt
 
 def make_tk_app(tmp_path):
     try:
-        village.create_app(
-            "test-tkvillage",
-            ".test-tkvillage",
-            project_root=tmp_path,
-            test_mode=True,
+        village.declare_app(
+            {
+                "name": "test-tkvillage",
+                "project-dir-name": ".test-tkvillage",
+                "project-root": tmp_path,
+                "test-mode": True,
+                "shutdown-policy": "explicit",
+                "shutdown-window-kind": None,
+                "on-shutdown": None,
+            }
         )
     except Exception as exc:
         pytest.skip(f"Tk is not available in this environment: {exc}")
@@ -28,12 +33,17 @@ def test_reset_preserves_runtime_container_identities(tmp_path):
     original_event_log = rt.event_log
     original_debug = rt.debug
 
-    village.create_app(
-        "test-tkvillage",
-        ".test-tkvillage",
-        project_root=tmp_path,
-        test_mode=True,
-        create_root=False,
+    village.declare_app(
+        {
+            "name": "test-tkvillage",
+            "project-dir-name": ".test-tkvillage",
+            "project-root": tmp_path,
+            "test-mode": True,
+            "create-root": False,
+            "shutdown-policy": "explicit",
+            "shutdown-window-kind": None,
+            "on-shutdown": None,
+        }
     )
     rt.windows["temporary"] = {"window_id": "temporary"}
     rt.event_log.append({"type": "TEMP"})
@@ -48,6 +58,92 @@ def test_reset_preserves_runtime_container_identities(tmp_path):
     assert rt.windows == {}
     assert rt.event_log == []
     assert rt.debug == {"enabled": False, "last_snapshot": None}
+
+
+def test_declare_app_requires_shutdown_policy(tmp_path):
+    with pytest.raises(ValueError):
+        village.declare_app(
+            {
+                "name": "test-tkvillage",
+                "project-dir-name": ".test-tkvillage",
+                "project-root": tmp_path,
+                "create-root": False,
+            }
+        )
+
+
+def test_explicit_shutdown_policy_waits_for_request(tmp_path):
+    called = []
+    village.declare_app(
+        {
+            "name": "test-tkvillage",
+            "project-dir-name": ".test-tkvillage",
+            "project-root": tmp_path,
+            "create-root": False,
+            "shutdown-policy": "explicit",
+            "shutdown-window-kind": None,
+            "on-shutdown": lambda: called.append("shutdown"),
+        }
+    )
+
+    village.tick_once()
+    assert called == []
+    assert rt.g["is_shutting_down"] is False
+
+    village.request_shutdown("test")
+    village.tick_once()
+
+    assert called == ["shutdown"]
+    assert rt.g["is_shutting_down"] is True
+    assert rt.g["shutdown_reason"] == "test"
+
+
+def test_on_last_window_close_waits_until_a_window_has_existed(tmp_path):
+    called = []
+    village.declare_app(
+        {
+            "name": "test-tkvillage",
+            "project-dir-name": ".test-tkvillage",
+            "project-root": tmp_path,
+            "create-root": False,
+            "shutdown-policy": "on-last-window-close",
+            "shutdown-window-kind": None,
+            "on-shutdown": lambda: called.append("shutdown"),
+        }
+    )
+
+    village.tick_once()
+    assert called == []
+
+    rt.g["has_had_window"] = True
+    village.tick_once()
+
+    assert called == ["shutdown"]
+    assert rt.g["is_shutting_down"] is True
+
+
+def test_on_window_close_waits_for_declared_kind_to_have_existed(tmp_path):
+    called = []
+    village.declare_app(
+        {
+            "name": "test-tkvillage",
+            "project-dir-name": ".test-tkvillage",
+            "project-root": tmp_path,
+            "create-root": False,
+            "shutdown-policy": "on-window-close",
+            "shutdown-window-kind": "main",
+            "on-shutdown": lambda: called.append("shutdown"),
+        }
+    )
+
+    village.tick_once()
+    assert called == []
+
+    rt.g["shutdown_window_kind_seen"] = True
+    village.tick_once()
+
+    assert called == ["shutdown"]
+    assert rt.g["is_shutting_down"] is True
 
 
 def register_counter_kind(kind="counter", multiplicity="singleton"):
@@ -162,22 +258,32 @@ def test_service_target_receives_queued_input(tmp_path):
 
 
 def test_config_declares_coerces_and_persists(tmp_path):
-    village.create_app(
-        "test-tkvillage",
-        ".test-tkvillage",
-        project_root=tmp_path,
-        test_mode=True,
-        create_root=False,
+    village.declare_app(
+        {
+            "name": "test-tkvillage",
+            "project-dir-name": ".test-tkvillage",
+            "project-root": tmp_path,
+            "test-mode": True,
+            "create-root": False,
+            "shutdown-policy": "explicit",
+            "shutdown-window-kind": None,
+            "on-shutdown": None,
+        }
     )
     village.declare_config("ui.scale", 1, "int", "UI scale")
     village.set_config("ui.scale", "3")
 
-    village.create_app(
-        "test-tkvillage",
-        ".test-tkvillage",
-        project_root=tmp_path,
-        test_mode=True,
-        create_root=False,
+    village.declare_app(
+        {
+            "name": "test-tkvillage",
+            "project-dir-name": ".test-tkvillage",
+            "project-root": tmp_path,
+            "test-mode": True,
+            "create-root": False,
+            "shutdown-policy": "explicit",
+            "shutdown-window-kind": None,
+            "on-shutdown": None,
+        }
     )
     village.declare_config("ui.scale", 1, "int", "UI scale")
     village.load_config()

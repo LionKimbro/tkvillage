@@ -1,5 +1,5 @@
 from . import app as rt
-from .app import create_app, reset_app, run, shutdown
+from .app import create_app, declare_app, request_shutdown, reset_app, run, shutdown
 from .config import declare_config, get_config, list_config, load_config, save_config, set_config
 from .debug import copy_debug_snapshot, get_debug_snapshot, toggle_debug
 from .effects import route_effect, route_effects
@@ -35,6 +35,7 @@ __all__ = [
     "close_window",
     "copy_debug_snapshot",
     "create_app",
+    "declare_app",
     "declare_config",
     "destroy_window",
     "get_config",
@@ -51,6 +52,7 @@ __all__ = [
     "register_service_target",
     "register_window_kind",
     "reset_app",
+    "request_shutdown",
     "rt",
     "route_effect",
     "route_effects",

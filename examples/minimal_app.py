@@ -56,7 +56,15 @@ def register():
 
 
 def main():
-    village.create_app("tkvillage-minimal", ".tkvillage-minimal")
+    village.declare_app(
+        {
+            "name": "tkvillage-minimal",
+            "project-dir-name": ".tkvillage-minimal",
+            "shutdown-policy": "on-last-window-close",
+            "shutdown-window-kind": None,
+            "on-shutdown": None,
+        }
+    )
     register()
     village.summon_window(MAIN_WINDOW)
     village.run()

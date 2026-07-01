@@ -41,7 +41,9 @@
   },
   "public-api": {
     "runtime": [
+      "declare_app",
       "create_app",
+      "request_shutdown",
       "reset_app",
       "run",
       "shutdown",
@@ -131,15 +133,67 @@
         "tick_after_id": "Tk after id or null",
         "tick_count": "int",
         "created_at": "float unix timestamp seconds",
-        "max_log_entries": "int"
+        "max_log_entries": "int",
+        "shutdown_policy": "explicit | on-last-window-close | on-window-close | null",
+        "shutdown_window_kind": "window kind string or null",
+        "shutdown_requested": "bool",
+        "shutdown_reason": "optional reason supplied to request_shutdown()",
+        "is_shutting_down": "bool",
+        "shutdown_handler": "callable or null",
+        "shutdown_handler_called": "bool",
+        "has_had_window": "bool",
+        "shutdown_window_kind_seen": "bool"
       }
     }
   },
   "functions": {
+    "declare_app": {
+      "module": "tkvillage.app",
+      "signature": "declare_app(spec)",
+      "description": "Preferred application declaration and runtime initialization API. Accepts one dictionary so application identity, project directory, test/root options, and shutdown policy are visible in one place.",
+      "parameters": {
+        "spec": "Application declaration dictionary using kebab-case keys."
+      },
+      "required-spec-keys": {
+        "name": "Application/runtime name stored in rt.g[\"name\"].",
+        "project-dir-name": "Project-local runtime directory name.",
+        "shutdown-policy": "One of explicit, on-last-window-close, or on-window-close."
+      },
+      "optional-spec-keys": {
+        "project-root": "Directory under which project-dir-name is resolved. Defaults to current working directory.",
+        "tick-interval-ms": "Tick loop interval in milliseconds. Defaults to 50.",
+        "test-mode": "When true, tick_once() re-raises exceptions after logging them.",
+        "create-root": "When false, do not create Tk root during declaration.",
+        "shutdown-window-kind": "Required when shutdown-policy is on-window-close.",
+        "on-shutdown": "Optional no-argument callable invoked once when graceful or hard shutdown begins."
+      },
+      "returns": "rt.g dictionary.",
+      "side-effects": [
+        "Calls reset_app().",
+        "Resolves and creates rt.g[\"project_dir\"].",
+        "Creates hidden Tk root unless create-root is false.",
+        "Loads config from config.json.",
+        "Registers debug windows.",
+        "Installs Ctrl+Shift+D debug shortcut when a root exists."
+      ],
+      "raises": [
+        "ValueError when required keys are absent.",
+        "ValueError for unknown shutdown-policy.",
+        "ValueError when shutdown-policy is on-window-close and shutdown-window-kind is absent.",
+        "ValueError when on-shutdown is not callable or None.",
+        "Tkinter/Tcl exceptions when create-root is true and Tk is unavailable or broken."
+      ],
+      "example": "village.declare_app({\"name\": \"my-app\", \"project-dir-name\": \".my-app\", \"shutdown-policy\": \"on-last-window-close\", \"shutdown-window-kind\": None, \"on-shutdown\": None})"
+    },
     "create_app": {
       "module": "tkvillage.app",
       "signature": "create_app(name=\"tkvillage\", project_dir_name=\".tkvillage\", project_root=None, tick_interval_ms=50, test_mode=False, create_root=True)",
-      "description": "Reset and initialize the single TkVillage runtime.",
+      "description": "Deprecated compatibility wrapper around declare_app(). New code should use declare_app(spec).",
+      "deprecation": {
+        "status": "deprecated",
+        "replacement": "declare_app(spec)",
+        "behavior": "Emits DeprecationWarning and calls declare_app() with shutdown-policy explicit and no shutdown handler."
+      },
       "parameters": {
         "name": "Application/runtime name stored in rt.g[\"name\"].",
         "project_dir_name": "Project-local runtime directory name.",
@@ -150,17 +204,31 @@
       },
       "returns": "rt.g dictionary.",
       "side-effects": [
-        "Calls reset_app().",
-        "Resolves and creates rt.g[\"project_dir\"].",
-        "Creates hidden Tk root when create_root is true.",
-        "Loads config from config.json.",
-        "Registers debug windows.",
-        "Installs Ctrl+Shift+D debug shortcut when a root exists."
+        "Emits DeprecationWarning.",
+        "Delegates to declare_app()."
       ],
       "raises": [
         "Tkinter/Tcl exceptions when create_root is true and Tk is unavailable or broken."
       ],
-      "example": "village.create_app(\"my-app\", \".my-app\")"
+      "example": "village.declare_app({\"name\": \"my-app\", \"project-dir-name\": \".my-app\", \"shutdown-policy\": \"explicit\", \"shutdown-window-kind\": None, \"on-shutdown\": None})"
+    },
+    "request_shutdown": {
+      "module": "tkvillage.app",
+      "signature": "request_shutdown(reason=None)",
+      "description": "Request graceful shutdown under the explicit shutdown policy. The actual shutdown begins at the end of a later tick when maybe_begin_shutdown() evaluates policy conditions.",
+      "parameters": {
+        "reason": "Optional value stored in rt.g[\"shutdown_reason\"] and written to runtime_log."
+      },
+      "returns": "None",
+      "side-effects": [
+        "Sets rt.g[\"shutdown_requested\"] true.",
+        "Stores reason in rt.g[\"shutdown_reason\"].",
+        "Appends a shutdown requested entry to rt.runtime_log."
+      ],
+      "notes": [
+        "For on-last-window-close and on-window-close policies, callers usually do not need request_shutdown().",
+        "request_shutdown() does not immediately stop the mainloop; shutdown is coordinated at tick end."
+      ]
     },
     "reset_app": {
       "module": "tkvillage.app",
@@ -192,6 +260,8 @@
       "description": "Stop ticking, destroy live windows, destroy root, and mark runtime not running.",
       "returns": "None",
       "side-effects": [
+        "Marks rt.g[\"is_shutting_down\"] true.",
+        "Calls the configured shutdown handler once if present and not already called.",
         "Calls stop_tick_loop().",
         "Destroys each live window.",
         "Destroys root when present.",
@@ -552,6 +622,7 @@
         "Routes effects.",
         "Calls on_tick hooks.",
         "Projects dirty windows.",
+        "Checks shutdown policy and may begin graceful shutdown.",
         "Logs tick exceptions."
       ],
       "raises": [
@@ -695,7 +766,7 @@
     "current-limitations": [
       "embedded and modal window policies are not implemented.",
       "worker_records is reserved but no worker API is currently public.",
-      "The CLI creates a runtime before running an entrypoint; entrypoints that call create_app() will reset that runtime.",
+      "The CLI declares a runtime before running an entrypoint; entrypoints that call declare_app() will reset that runtime.",
       "The current top-level API does not re-export testing.run_until."
     ]
   }

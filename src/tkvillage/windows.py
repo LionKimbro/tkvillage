@@ -103,6 +103,9 @@ def realize_window(kind, instance_key, key=None, payload=None):
         "debug_label": kind["debug_label"],
     }
     rt.windows[window_id] = record
+    rt.g["has_had_window"] = True
+    if kind["window_kind"] == rt.g["shutdown_window_kind"]:
+        rt.g["shutdown_window_kind_seen"] = True
     rt.windows_by_instance_key[instance_key] = window_id
     rt.targets[window_id] = {
         "target_id": window_id,

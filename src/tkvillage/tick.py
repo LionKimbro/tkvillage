@@ -4,7 +4,7 @@ import time
 import traceback
 
 from . import app as rt
-from .app import append_log
+from .app import append_log, maybe_begin_shutdown
 from .effects import route_effects
 from .reducers import reduce_window_event
 from .windows import project_window
@@ -42,6 +42,7 @@ def tick_once():
         drain_window_events()
         call_window_ticks()
         project_dirty_windows()
+        maybe_begin_shutdown()
     except Exception as exc:
         append_log(
             rt.runtime_log,

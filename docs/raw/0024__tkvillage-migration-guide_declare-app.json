@@ -1,0 +1,216 @@
+{
+  "document": {
+    "document-id": "tkvillage.migration-guide.declare-app.v1",
+    "title": "TkVillage Migration Guide: declare_app",
+    "tags": [
+      "tkvillage",
+      "migration",
+      "declare-app",
+      "deprecation",
+      "llm-coding",
+      "codex",
+      "claude-code"
+    ],
+    "purpose": "Guide Codex, Claude Code, and other LLM coding agents through migrating TkVillage applications from create_app(...) to declare_app(spec), including shutdown policy declarations.",
+    "author": [
+      "Codex"
+    ],
+    "status": "initial",
+    "created": "2026-06-30"
+  },
+  "audience": {
+    "primary": [
+      "Codex instances",
+      "Claude Code instances",
+      "LLM coding agents"
+    ],
+    "secondary": [
+      "human maintainers"
+    ]
+  },
+  "summary": {
+    "what-changed": "TkVillage applications should now be declared with declare_app(spec), where spec is a single dictionary containing application identity, project directory settings, runtime options, and a required shutdown policy.",
+    "deprecated": "create_app(...) is deprecated. It remains as a compatibility wrapper but should not be used in new or migrated code.",
+    "why": [
+      "One dictionary keeps application declaration visible and inspectable.",
+      "The shutdown policy is now non-optional application identity.",
+      "Future declaration fields can be added without expanding positional function signatures."
+    ]
+  },
+  "migration-rule": {
+    "old": "village.create_app(\"my-app\", \".my-app\", project_root=..., test_mode=..., create_root=...)",
+    "new": "village.declare_app({\"name\": \"my-app\", \"project-dir-name\": \".my-app\", \"project-root\": ..., \"test-mode\": ..., \"create-root\": ..., \"shutdown-policy\": \"...\", \"shutdown-window-kind\": ..., \"on-shutdown\": ...})",
+    "important": [
+      "Always add shutdown-policy.",
+      "Use kebab-case dictionary keys.",
+      "Use on-shutdown for the optional single shutdown handler.",
+      "Do not invent a second shutdown hook."
+    ]
+  },
+  "shutdown-policy-selection": {
+    "explicit": {
+      "when-to-use": "Use for apps that may keep running without visible windows, service-style TkVillage runtimes, tray-like apps, or test harnesses.",
+      "required-fields": {
+        "shutdown-policy": "explicit",
+        "shutdown-window-kind": null
+      },
+      "how-shutdown-starts": "Application code calls village.request_shutdown(reason=None); shutdown begins at the end of a later tick."
+    },
+    "on-last-window-close": {
+      "when-to-use": "Use for ordinary GUI apps where closing the final window should end the program.",
+      "required-fields": {
+        "shutdown-policy": "on-last-window-close",
+        "shutdown-window-kind": null
+      },
+      "how-shutdown-starts": "After at least one window has existed, tick-end shutdown begins when rt.windows is empty."
+    },
+    "on-window-close": {
+      "when-to-use": "Use when one declared window kind, usually the main window, owns program lifetime.",
+      "required-fields": {
+        "shutdown-policy": "on-window-close",
+        "shutdown-window-kind": "main-window-kind"
+      },
+      "how-shutdown-starts": "After a window of shutdown-window-kind has existed, tick-end shutdown begins when no live windows of that kind remain."
+    }
+  },
+  "mechanical-steps-for-agents": [
+    {
+      "step": "find-create-app",
+      "instruction": "Search for create_app(. Include direct imports from tkvillage.app and top-level tkvillage imports.",
+      "preferred-command": "rg -n \"create_app\\(\" ."
+    },
+    {
+      "step": "replace-with-declare-app",
+      "instruction": "Replace each application startup call with declare_app({...}). Preserve the old name, project directory, project root, tick interval, test mode, and create-root behavior as spec fields."
+    },
+    {
+      "step": "choose-shutdown-policy",
+      "instruction": "Choose explicit, on-last-window-close, or on-window-close based on application behavior. If unclear, prefer on-last-window-close for ordinary GUI apps and explicit for tests or service-like runtimes."
+    },
+    {
+      "step": "wire-shutdown-handler",
+      "instruction": "If the app has existing shutdown cleanup logic, put exactly one no-argument callable in on-shutdown. Otherwise use None."
+    },
+    {
+      "step": "replace-direct-exit-intent",
+      "instruction": "Where app code wants graceful explicit shutdown, call village.request_shutdown(reason=None). Keep village.shutdown() only for hard immediate cleanup or tests."
+    },
+    {
+      "step": "update-imports",
+      "instruction": "If code imports create_app directly, change it to declare_app. Keep create_app only if intentionally testing the deprecated wrapper."
+    },
+    {
+      "step": "run-tests",
+      "instruction": "Run the existing tests. Add or update tests for the chosen shutdown policy."
+    },
+    {
+      "step": "update-docs",
+      "instruction": "Update local README or app docs to show declare_app(spec), not create_app(...)."
+    }
+  ],
+  "before-after-examples": {
+    "ordinary-gui-app": {
+      "before": [
+        "import tkvillage as village",
+        "",
+        "village.create_app(\"notes\", \".notes\")",
+        "register_windows()",
+        "village.summon_window(\"main\")",
+        "village.run()"
+      ],
+      "after": [
+        "import tkvillage as village",
+        "",
+        "village.declare_app({",
+        "    \"name\": \"notes\",",
+        "    \"project-dir-name\": \".notes\",",
+        "    \"shutdown-policy\": \"on-last-window-close\",",
+        "    \"shutdown-window-kind\": None,",
+        "    \"on-shutdown\": None,",
+        "})",
+        "register_windows()",
+        "village.summon_window(\"main\")",
+        "village.run()"
+      ]
+    },
+    "main-window-owned-lifetime": {
+      "before": [
+        "village.create_app(\"designer\", \".designer\")"
+      ],
+      "after": [
+        "village.declare_app({",
+        "    \"name\": \"designer\",",
+        "    \"project-dir-name\": \".designer\",",
+        "    \"shutdown-policy\": \"on-window-close\",",
+        "    \"shutdown-window-kind\": \"main\",",
+        "    \"on-shutdown\": save_session_summary,",
+        "})"
+      ]
+    },
+    "test-runtime": {
+      "before": [
+        "village.create_app(\"test-app\", \".test-app\", project_root=tmp_path, test_mode=True, create_root=False)"
+      ],
+      "after": [
+        "village.declare_app({",
+        "    \"name\": \"test-app\",",
+        "    \"project-dir-name\": \".test-app\",",
+        "    \"project-root\": tmp_path,",
+        "    \"test-mode\": True,",
+        "    \"create-root\": False,",
+        "    \"shutdown-policy\": \"explicit\",",
+        "    \"shutdown-window-kind\": None,",
+        "    \"on-shutdown\": None,",
+        "})"
+      ]
+    }
+  },
+  "api-notes": {
+    "declare_app": {
+      "signature": "declare_app(spec)",
+      "notes": [
+        "spec must include name, project-dir-name, and shutdown-policy.",
+        "shutdown-policy on-window-close also requires shutdown-window-kind.",
+        "on-shutdown must be callable or None."
+      ]
+    },
+    "request_shutdown": {
+      "signature": "request_shutdown(reason=None)",
+      "notes": [
+        "Sets rt.g.shutdown_requested and rt.g.shutdown_reason.",
+        "Does not stop the runtime immediately.",
+        "The actual shutdown begins at the end of tick_once()."
+      ]
+    },
+    "shutdown": {
+      "signature": "shutdown()",
+      "notes": [
+        "Hard immediate cleanup remains available.",
+        "It calls the configured shutdown handler once if it has not already run."
+      ]
+    },
+    "create_app": {
+      "signature": "create_app(...)",
+      "status": "deprecated",
+      "notes": [
+        "Do not use in migrated code.",
+        "It emits DeprecationWarning.",
+        "It delegates to declare_app() with shutdown-policy explicit and no shutdown handler."
+      ]
+    }
+  },
+  "verification-checklist": [
+    "No ordinary app startup path calls create_app(...).",
+    "Every declare_app(spec) includes shutdown-policy.",
+    "on-window-close declarations include shutdown-window-kind.",
+    "At most one on-shutdown handler is declared.",
+    "Explicit shutdown flows call request_shutdown(), not shutdown(), unless immediate hard cleanup is intended.",
+    "Tests cover the intended shutdown policy.",
+    "Docs and examples show declare_app(spec)."
+  ],
+  "related-documents": {
+    "manual": "docs/raw/0020__tkvillage-system-manual.json",
+    "api-reference": "docs/raw/0022__tkvillage-system-api-reference.json",
+    "data-dictionary": "docs/raw/0015__data-dictionary_app.json"
+  }
+}

@@ -621,9 +621,9 @@
                 "owned_by": "app.g.project_dir",
                 "set_by": [
                   "reset_app()",
-                  "create_app()"
+                  "declare_app()"
                 ],
-                "lifecycle": "Resolved during create_app(); cleared during reset.",
+                "lifecycle": "Resolved during declare_app(); cleared during reset.",
                 "runtime_only": false,
                 "export_behavior": "Convert to string when represented in JSON or debug output."
               }
@@ -774,6 +774,172 @@
                   "reset_app()"
                 ],
                 "used_for": "append_log() trims event_log, effect_log, message_log, and runtime_log to this size."
+              }
+            },
+            "shutdown_policy": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "required": true,
+              "nullable": true,
+              "description": "Declared graceful shutdown policy.",
+              "default": null,
+              "constraints": {
+                "allowed_values": [
+                  "explicit",
+                  "on-last-window-close",
+                  "on-window-close",
+                  null
+                ]
+              },
+              "json_clean": true,
+              "data-dictionary": {
+                "owned_by": "app.g.shutdown_policy",
+                "set_by": [
+                  "reset_app()",
+                  "declare_app()"
+                ],
+                "used_for": "maybe_begin_shutdown() policy decision at tick end."
+              }
+            },
+            "shutdown_window_kind": {
+              "type": [
+                "window-kind",
+                "null"
+              ],
+              "required": true,
+              "nullable": true,
+              "description": "Window kind watched by the on-window-close shutdown policy.",
+              "default": null,
+              "json_clean": true,
+              "data-dictionary": {
+                "owned_by": "app.g.shutdown_window_kind",
+                "set_by": [
+                  "reset_app()",
+                  "declare_app()"
+                ],
+                "used_for": "maybe_begin_shutdown() checks whether this kind has closed."
+              }
+            },
+            "shutdown_requested": {
+              "type": "bool",
+              "logical_type": "boolean",
+              "required": true,
+              "description": "Explicit shutdown request flag set by request_shutdown().",
+              "default": false,
+              "json_clean": true,
+              "data-dictionary": {
+                "owned_by": "app.g.shutdown_requested",
+                "set_by": [
+                  "reset_app()",
+                  "request_shutdown()"
+                ],
+                "used_for": "explicit shutdown policy."
+              }
+            },
+            "shutdown_reason": {
+              "type": [
+                "any value",
+                "null"
+              ],
+              "required": true,
+              "nullable": true,
+              "description": "Optional reason supplied to request_shutdown().",
+              "default": null,
+              "json_clean": "mixed",
+              "data-dictionary": {
+                "owned_by": "app.g.shutdown_reason",
+                "set_by": [
+                  "reset_app()",
+                  "request_shutdown()"
+                ],
+                "used_for": "Debugging/logging the explicit shutdown request."
+              }
+            },
+            "is_shutting_down": {
+              "type": "bool",
+              "logical_type": "boolean",
+              "required": true,
+              "description": "Whether graceful or hard shutdown has begun.",
+              "default": false,
+              "json_clean": true,
+              "data-dictionary": {
+                "owned_by": "app.g.is_shutting_down",
+                "set_by": [
+                  "reset_app()",
+                  "begin_shutdown()",
+                  "shutdown()"
+                ],
+                "used_for": "Prevents duplicate graceful shutdown starts."
+              }
+            },
+            "shutdown_handler": {
+              "type": [
+                "function-reference",
+                "null"
+              ],
+              "required": true,
+              "nullable": true,
+              "description": "Optional no-argument callable invoked once when shutdown begins.",
+              "default": null,
+              "json_clean": false,
+              "data-dictionary": {
+                "owned_by": "app.g.shutdown_handler",
+                "set_by": [
+                  "reset_app()",
+                  "declare_app()"
+                ],
+                "used_for": "User-supplied shutdown procedure.",
+                "runtime_only": true
+              }
+            },
+            "shutdown_handler_called": {
+              "type": "bool",
+              "logical_type": "boolean",
+              "required": true,
+              "description": "Whether shutdown_handler has already been invoked.",
+              "default": false,
+              "json_clean": true,
+              "data-dictionary": {
+                "owned_by": "app.g.shutdown_handler_called",
+                "set_by": [
+                  "reset_app()",
+                  "call_shutdown_handler()"
+                ],
+                "used_for": "Ensures the shutdown handler runs at most once."
+              }
+            },
+            "has_had_window": {
+              "type": "bool",
+              "logical_type": "boolean",
+              "required": true,
+              "description": "Whether any window has been realized since reset.",
+              "default": false,
+              "json_clean": true,
+              "data-dictionary": {
+                "owned_by": "app.g.has_had_window",
+                "set_by": [
+                  "reset_app()",
+                  "realize_window()"
+                ],
+                "used_for": "Prevents on-last-window-close from firing before the first window is summoned."
+              }
+            },
+            "shutdown_window_kind_seen": {
+              "type": "bool",
+              "logical_type": "boolean",
+              "required": true,
+              "description": "Whether a window of shutdown_window_kind has been realized since reset.",
+              "default": false,
+              "json_clean": true,
+              "data-dictionary": {
+                "owned_by": "app.g.shutdown_window_kind_seen",
+                "set_by": [
+                  "reset_app()",
+                  "realize_window()"
+                ],
+                "used_for": "Prevents on-window-close from firing before the watched window kind is summoned."
               }
             }
           },

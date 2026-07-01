@@ -4,7 +4,7 @@ import argparse
 import json
 import runpy
 
-from .app import create_app, run
+from .app import declare_app, run
 from .config import get_config, list_config, set_config
 from .debug import get_debug_snapshot
 
@@ -27,7 +27,16 @@ def main(argv=None):
     sub.add_parser("debug-snapshot")
 
     args = parser.parse_args(argv)
-    create_app(project_dir_name=args.project_dir, project_root=args.project_root)
+    declare_app(
+        {
+            "name": "tkvillage",
+            "project-dir-name": args.project_dir,
+            "project-root": args.project_root,
+            "shutdown-policy": "explicit",
+            "shutdown-window-kind": None,
+            "on-shutdown": None,
+        }
+    )
 
     if args.command == "run":
         if args.entrypoint:

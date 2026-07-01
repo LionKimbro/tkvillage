@@ -78,12 +78,12 @@
   "normal-workflow": [
     {
       "step": "create-runtime",
-      "description": "Call create_app() once near program start. This resets the runtime, resolves the project directory, creates the hidden root by default, loads config, and registers debug windows.",
-      "code": "village.create_app(\"my-app\", \".my-app\")"
+      "description": "Call declare_app(spec) once near program start. This resets the runtime, resolves the project directory, creates the hidden root by default, loads config, registers debug windows, and declares the required shutdown policy.",
+      "code": "village.declare_app({\"name\": \"my-app\", \"project-dir-name\": \".my-app\", \"shutdown-policy\": \"on-last-window-close\", \"shutdown-window-kind\": None, \"on-shutdown\": None})"
     },
     {
       "step": "declare-config",
-      "description": "Optionally declare configuration keys before loading or using values. If create_app() has already loaded config, call load_config() again after declarations when you need persisted values applied to new declarations.",
+      "description": "Optionally declare configuration keys before loading or using values. If declare_app() has already loaded config, call load_config() again after declarations when you need persisted values applied to new declarations.",
       "code": "village.declare_config(\"ui.scale\", 1, \"int\", \"UI scale\")"
     },
     {
@@ -151,7 +151,13 @@
       "def project(_rt, record):",
       "    record[\"widgets\"][\"label\"].configure(text=record[\"state\"][\"status\"])",
       "",
-      "village.create_app(\"example\", \".example\")",
+      "village.declare_app({",
+      "    \"name\": \"example\",",
+      "    \"project-dir-name\": \".example\",",
+      "    \"shutdown-policy\": \"on-last-window-close\",",
+      "    \"shutdown-window-kind\": None,",
+      "    \"on-shutdown\": None,",
+      "})",
       "village.register_window_kind(MAIN_WINDOW, create=create, make_initial_state=make_initial_state, reduce_event=reduce_event, project=project)",
       "village.summon_window(MAIN_WINDOW)",
       "village.run()"
@@ -170,7 +176,16 @@
       "tick_after_id",
       "tick_count",
       "created_at",
-      "max_log_entries"
+      "max_log_entries",
+      "shutdown_policy",
+      "shutdown_window_kind",
+      "shutdown_requested",
+      "shutdown_reason",
+      "is_shutting_down",
+      "shutdown_handler",
+      "shutdown_handler_called",
+      "has_had_window",
+      "shutdown_window_kind_seen"
     ],
     "container-globals": [
       "config_declarations",
@@ -269,15 +284,62 @@
       "bool strings true/yes/on/1 become True; false/no/off/0 become False."
     ]
   },
+  "application-declaration": {
+    "preferred-api": "declare_app(spec)",
+    "deprecated-api": "create_app(...) is deprecated and exists only as a compatibility wrapper.",
+    "required-keys": [
+      "name",
+      "project-dir-name",
+      "shutdown-policy"
+    ],
+    "common-optional-keys": [
+      "project-root",
+      "tick-interval-ms",
+      "test-mode",
+      "create-root",
+      "shutdown-window-kind",
+      "on-shutdown"
+    ],
+    "example": {
+      "name": "my-app",
+      "project-dir-name": ".my-app",
+      "shutdown-policy": "on-last-window-close",
+      "shutdown-window-kind": null,
+      "on-shutdown": "<function or null>"
+    },
+    "notes": [
+      "Use kebab-case keys in the declaration dictionary.",
+      "shutdown-policy is non-optional.",
+      "on-shutdown may be None or one callable.",
+      "The shutdown handler takes no arguments in the current implementation."
+    ]
+  },
+  "shutdown-policy": {
+    "summary": "Graceful shutdown is checked at the end of tick_once(), after normal service draining, window event reduction, on_tick hooks, and projection.",
+    "policies": {
+      "explicit": "Runtime continues until request_shutdown(reason=None) is called. The next tick-end shutdown check begins shutdown.",
+      "on-last-window-close": "Runtime begins shutdown at tick end after at least one window has existed and no live windows remain.",
+      "on-window-close": "Runtime begins shutdown at tick end after a window of shutdown-window-kind has existed and no live windows of that kind remain."
+    },
+    "shutdown-sequence": [
+      "maybe_begin_shutdown() detects that policy conditions are satisfied.",
+      "begin_shutdown() sets rt.g[\"is_shutting_down\"] true.",
+      "The optional rt.g[\"shutdown_handler\"] is called once.",
+      "The tick loop is stopped.",
+      "The Tk root mainloop is asked to quit when a root exists.",
+      "rt.g[\"is_running\"] is set false."
+    ],
+    "hard-shutdown": "shutdown() remains available for immediate cleanup and also calls the configured shutdown handler once before destroying windows/root."
+  },
   "debugging": {
     "toggle": "toggle_debug() flips rt.debug[\"enabled\"]. When turning on, it summons the TkVillage runtime dashboard.",
-    "keyboard-shortcut": "Ctrl+Shift+D is installed on the root by create_app() when a root exists.",
+    "keyboard-shortcut": "Ctrl+Shift+D is installed on the root by declare_app() when a root exists.",
     "snapshot": "get_debug_snapshot(selected_window_id=None) returns a JSON-friendly runtime summary.",
     "clipboard": "copy_debug_snapshot() writes the JSON snapshot text to the Tk clipboard when a root exists.",
     "debug-dashboard-kind": "tkvillage-debug-dashboard"
   },
   "testing": {
-    "test-mode": "create_app(test_mode=True) causes tick_once() to re-raise tick exceptions instead of only logging them.",
+    "test-mode": "declare_app({..., \"test-mode\": True}) causes tick_once() to re-raise tick exceptions instead of only logging them.",
     "manual-ticks": "Use tick_once() or run_ticks(count) to advance the runtime without entering mainloop.",
     "run-until": "testing.run_until(predicate, timeout_ms=1000, max_ticks=1000) advances ticks until a condition is true or a limit is reached.",
     "tk-availability": "Tests that create Tk roots should be prepared to skip when the host Python/Tcl/Tk install is broken or unavailable."

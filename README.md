@@ -17,7 +17,13 @@ The core API is re-exported from `tkvillage`:
 ```python
 import tkvillage as village
 
-village.create_app("my-app", ".my-app")
+village.declare_app({
+    "name": "my-app",
+    "project-dir-name": ".my-app",
+    "shutdown-policy": "on-last-window-close",
+    "shutdown-window-kind": None,
+    "on-shutdown": None,
+})
 village.register_window_kind(...)
 village.summon_window("main")
 village.run()
