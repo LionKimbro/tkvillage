@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Hosting Functions - TkVillage</title><link rel="stylesheet" href="../assets/manual.css"></head>
+<body><div class="shell"><aside class="sidebar"><a class="brand" href="../index.html"><strong>TkVillage</strong><span>Human manual</span></a><nav><div class="nav-group"><h2>Start</h2><a href="../index.html">Home</a><a href="../tutorial/index.html">Tutorial</a></div><div class="nav-group"><h2>Mental Model</h2><a href="../mental-model/runtime-state.html">Runtime State</a></div><div class="nav-group"><h2>Functions</h2><a href="all-functions.html">All Functions</a><a href="window-kind-functions.html">Window-Kind Functions</a><a href="windows-functions.html">Window Functions</a><a href="events-messages-functions.html">Events and Messages</a><a href="hosting-functions.html">Hosting Functions</a><a href="runtime-functions.html">Runtime Functions</a><a href="effects-ticks-debug-functions.html">Effects, Ticks, Debug</a></div><div class="nav-group"><h2>Reference</h2><a href="../glossary.html">Glossary</a></div></nav></aside><main class="content">
+<section class="hero"><h1>Hosting Functions</h1><p>Project-directory readiness is explicit, small, and friendly to lionscliapp.</p></section>
+<ul class="function-list"><li><a href="all-functions.html#declare_app">declare_app</a></li><li><a href="all-functions.html#ensure_ready">ensure_ready</a></li><li><a href="all-functions.html#run">run</a></li></ul>
+<div class="callout">TkVillage no longer owns application configuration. Use lionscliapp for host app configuration when a TkVillage app runs inside lionscliapp.</div>
+<h2>lionscliapp Mode</h2>
+<p>Declare <code>{"lionscliapp": True}</code> and call <code>ensure_ready()</code> at the top of commands that use TkVillage. TkVillage then creates <code>&lt;lionscliapp-project&gt;/tkvillage</code>.</p>
+<p><a href="../tutorial/lionscliapp-setup.html">Open the lionscliapp setup walkthrough</a></p>
+<h2>Standalone Mode</h2>
+<p>Declare <code>project-dir-name</code> or <code>project-dir</code>. <code>ensure_ready()</code> creates that directory when the runtime first needs it.</p>
+</main></div><script src="../assets/nav.js"></script></body></html>

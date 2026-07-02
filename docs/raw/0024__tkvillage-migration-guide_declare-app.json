@@ -29,7 +29,7 @@
     ]
   },
   "summary": {
-    "what-changed": "TkVillage applications should now be declared with declare_app(spec), where spec is a single dictionary containing application identity, project directory settings, runtime options, and a required shutdown policy.",
+    "what-changed": "TkVillage applications should now be declared with declare_app(spec), where spec is a single dictionary containing application identity, hosting/project-directory settings, runtime options, and a required shutdown policy.",
     "deprecated": "create_app(...) is deprecated. It remains as a compatibility wrapper but should not be used in new or migrated code.",
     "why": [
       "One dictionary keeps application declaration visible and inspectable.",
@@ -39,10 +39,12 @@
   },
   "migration-rule": {
     "old": "village.create_app(\"my-app\", \".my-app\", project_root=..., test_mode=..., create_root=...)",
-    "new": "village.declare_app({\"name\": \"my-app\", \"project-dir-name\": \".my-app\", \"project-root\": ..., \"test-mode\": ..., \"create-root\": ..., \"shutdown-policy\": \"...\", \"shutdown-window-kind\": ..., \"on-shutdown\": ...})",
+    "new": "village.declare_app({\"name\": \"my-app\", \"lionscliapp\": True, \"test-mode\": ..., \"create-root\": ..., \"shutdown-policy\": \"...\", \"shutdown-window-kind\": ..., \"on-shutdown\": ...})",
     "important": [
       "Always add shutdown-policy.",
       "Use kebab-case dictionary keys.",
+      "Prefer lionscliapp mode for hosted apps. Use project-dir-name or project-dir only for standalone apps.",
+      "Call village.ensure_ready() at the top of lionscliapp commands that use TkVillage.",
       "Use on-shutdown for the optional single shutdown handler.",
       "Do not invent a second shutdown hook."
     ]
@@ -81,7 +83,11 @@
     },
     {
       "step": "replace-with-declare-app",
-      "instruction": "Replace each application startup call with declare_app({...}). Preserve the old name, project directory, project root, tick interval, test mode, and create-root behavior as spec fields."
+      "instruction": "Replace each application startup call with declare_app({...}). Preserve the old name, tick interval, test mode, and create-root behavior as spec fields. For lionscliapp-hosted apps, use lionscliapp: True instead of a standalone project-dir-name."
+    },
+    {
+      "step": "add-ensure-ready",
+      "instruction": "For lionscliapp-hosted commands that use TkVillage paths or runtime, call village.ensure_ready() after lionscliapp has entered command runtime."
     },
     {
       "step": "choose-shutdown-policy",
@@ -169,9 +175,19 @@
     "declare_app": {
       "signature": "declare_app(spec)",
       "notes": [
-        "spec must include name, project-dir-name, and shutdown-policy.",
+        "spec must include name and shutdown-policy.",
+        "standalone declarations must include project-dir-name or project-dir.",
+        "lionscliapp declarations may omit project-dir-name.",
         "shutdown-policy on-window-close also requires shutdown-window-kind.",
         "on-shutdown must be callable or None."
+      ]
+    },
+    "ensure_ready": {
+      "signature": "ensure_ready()",
+      "notes": [
+        "In lionscliapp mode, resolves lionscliapp's project root at command runtime and creates the tkvillage subdirectory.",
+        "In standalone mode, creates the declared project directory.",
+        "run() calls ensure_ready() automatically."
       ]
     },
     "request_shutdown": {
@@ -202,6 +218,8 @@
   "verification-checklist": [
     "No ordinary app startup path calls create_app(...).",
     "Every declare_app(spec) includes shutdown-policy.",
+    "lionscliapp-hosted commands call ensure_ready() before using TkVillage project files.",
+    "Standalone declarations include project-dir-name or project-dir.",
     "on-window-close declarations include shutdown-window-kind.",
     "At most one on-shutdown handler is declared.",
     "Explicit shutdown flows call request_shutdown(), not shutdown(), unless immediate hard cleanup is intended.",

@@ -16,6 +16,7 @@
           <a href="index.html">Home</a>
           <a href="tutorial/index.html">Tutorial</a>
           <a href="tutorial/quick-start.html">Quick Start</a>
+          <a href="tutorial/lionscliapp-setup.html">lionscliapp Setup</a>
           <a href="tutorial/counter-window.html">Counter Window</a>
         </div>
         <div class="nav-group">
@@ -23,6 +24,7 @@
           <a href="mental-model/overview.html">Overview</a>
           <a href="mental-model/window-kinds.html">Window Kinds</a>
           <a href="mental-model/windows.html">Windows</a>
+          <a href="mental-model/identifiers-and-targets.html">Identifiers and Targets</a>
           <a href="mental-model/events-effects.html">Events and Effects</a>
           <a href="mental-model/tick-loop.html">Tick Loop</a>
           <a href="mental-model/runtime-state.html">Runtime State</a>
@@ -34,9 +36,13 @@
           <a href="functions/window-kind-functions.html">Window-Kind Functions</a>
           <a href="functions/windows-functions.html">Window Functions</a>
           <a href="functions/events-messages-functions.html">Events and Messages</a>
-          <a href="functions/config-functions.html">Config Functions</a>
+          <a href="functions/hosting-functions.html">Hosting Functions</a>
           <a href="functions/runtime-functions.html">Runtime Functions</a>
           <a href="functions/effects-ticks-debug-functions.html">Effects, Ticks, Debug</a>
+        </div>
+        <div class="nav-group">
+          <h2>Reference</h2>
+          <a href="glossary.html">Glossary</a>
         </div>
       </nav>
     </aside>
@@ -51,6 +57,11 @@
           <h3>Learn by doing</h3>
           <p>Start with the tutorial and build the shape of a TkVillage application before reading every detail.</p>
           <p><a href="tutorial/quick-start.html">Open the quick start</a></p>
+        </article>
+        <article class="card">
+          <h3>Use lionscliapp</h3>
+          <p>Most TkVillage apps are hosted by lionscliapp. The setup page shows where declaration ends and runtime readiness begins.</p>
+          <p><a href="tutorial/lionscliapp-setup.html">Set up hosting</a></p>
         </article>
         <article class="card">
           <h3>Build the picture</h3>
@@ -73,13 +84,10 @@
         <div data-step="5">Each tick drains queues, runs reducers, routes effects, calls hooks, projects dirty windows, and checks shutdown.</div>
       </div>
 
-      <div class="callout">
-        <strong>Design rule:</strong> pass only what varies. TkVillage does not pass the runtime module into callbacks. Import <code>tkvillage.app</code> directly only when a callback genuinely needs runtime inspection.
-      </div>
-
       <h2>Recommended Reading Order</h2>
       <ol>
         <li><a href="tutorial/quick-start.html">Quick Start</a></li>
+        <li><a href="tutorial/lionscliapp-setup.html">lionscliapp Setup</a> for the common hosted path</li>
         <li><a href="mental-model/overview.html">Mental Model Overview</a></li>
         <li><a href="mental-model/window-kinds.html">Window Kinds</a> and <a href="mental-model/windows.html">Windows</a></li>
         <li><a href="functions/all-functions.html">All Functions</a> when you need exact signatures</li>

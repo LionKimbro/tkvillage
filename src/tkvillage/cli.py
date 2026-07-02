@@ -5,7 +5,6 @@ import json
 import runpy
 
 from .app import declare_app, run
-from .config import get_config, list_config, set_config
 from .debug import get_debug_snapshot
 
 
@@ -18,12 +17,6 @@ def main(argv=None):
     run_cmd = sub.add_parser("run")
     run_cmd.add_argument("entrypoint", nargs="?")
 
-    sub.add_parser("config-list")
-    get_cmd = sub.add_parser("config-get")
-    get_cmd.add_argument("name")
-    set_cmd = sub.add_parser("config-set")
-    set_cmd.add_argument("name")
-    set_cmd.add_argument("value")
     sub.add_parser("debug-snapshot")
 
     args = parser.parse_args(argv)
@@ -42,15 +35,6 @@ def main(argv=None):
         if args.entrypoint:
             runpy.run_path(args.entrypoint, run_name="__main__")
         run()
-        return 0
-    if args.command == "config-list":
-        print(json.dumps(list_config(), indent=2, default=str))
-        return 0
-    if args.command == "config-get":
-        print(get_config(args.name))
-        return 0
-    if args.command == "config-set":
-        print(set_config(args.name, args.value))
         return 0
     if args.command == "debug-snapshot":
         print(json.dumps(get_debug_snapshot(), indent=2, default=str))

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Glossary - TkVillage</title><link rel="stylesheet" href="assets/manual.css"></head>
+<body><div class="shell"><aside class="sidebar"><a class="brand" href="index.html"><strong>TkVillage</strong><span>Human manual</span></a><nav><div class="nav-group"><h2>Start</h2><a href="index.html">Home</a><a href="tutorial/index.html">Tutorial</a><a href="tutorial/quick-start.html">Quick Start</a><a href="tutorial/lionscliapp-setup.html">lionscliapp Setup</a><a href="tutorial/counter-window.html">Counter Window</a></div><div class="nav-group"><h2>Mental Model</h2><a href="mental-model/overview.html">Overview</a><a href="mental-model/window-kinds.html">Window Kinds</a><a href="mental-model/windows.html">Windows</a><a href="mental-model/identifiers-and-targets.html">Identifiers and Targets</a><a href="mental-model/events-effects.html">Events and Effects</a><a href="mental-model/tick-loop.html">Tick Loop</a><a href="mental-model/runtime-state.html">Runtime State</a><a href="mental-model/shutdown.html">Shutdown</a></div><div class="nav-group"><h2>Functions</h2><a href="functions/all-functions.html">All Functions</a><a href="functions/window-kind-functions.html">Window-Kind Functions</a><a href="functions/windows-functions.html">Window Functions</a><a href="functions/events-messages-functions.html">Events and Messages</a><a href="functions/hosting-functions.html">Hosting Functions</a><a href="functions/runtime-functions.html">Runtime Functions</a><a href="functions/effects-ticks-debug-functions.html">Effects, Ticks, Debug</a></div><div class="nav-group"><h2>Reference</h2><a href="glossary.html">Glossary</a></div></nav></aside><main class="content">
+<section class="hero"><h1>Glossary</h1><p>Short meanings for the recurring TkVillage words.</p></section>
+<table>
+  <tr><th>Term</th><th>Meaning</th></tr>
+  <tr><td><code>app</code></td><td>The single TkVillage runtime for the process.</td></tr>
+  <tr><td><code>rt.g</code></td><td>The runtime dictionary for scalar-ish values and handles such as root, project_dir, shutdown policy, and tick count.</td></tr>
+  <tr><td><code>root</code></td><td>The hidden <code>tkinter.Tk</code> object that anchors Tkinter.</td></tr>
+  <tr><td><code>Toplevel</code></td><td>A visible Tkinter application window.</td></tr>
+  <tr><td><code>window_kind</code></td><td>An app-chosen name for a registered window recipe.</td></tr>
+  <tr><td><code>window_id</code></td><td>A TkVillage-generated id for one live window, currently shaped like <code>window-1</code>.</td></tr>
+  <tr><td><code>instance_key</code></td><td>A reuse key derived from a window kind and summon policy.</td></tr>
+  <tr><td><code>target_id</code></td><td>An event/message routing address. For windows, this equals the window id.</td></tr>
+  <tr><td><code>target</code></td><td>Anything with an inbox that can receive queued input. Windows and services are targets.</td></tr>
+  <tr><td><code>service target</code></td><td>A non-window target registered with <code>register_service_target()</code>.</td></tr>
+  <tr><td><code>event</code></td><td>A semantic dictionary queued for a reducer or service handler.</td></tr>
+  <tr><td><code>message</code></td><td>A payload wrapped in a <code>MESSAGE</code> event envelope.</td></tr>
+  <tr><td><code>effect</code></td><td>A semantic dictionary returned by a reducer or handler for the runtime to route.</td></tr>
+  <tr><td><code>reducer</code></td><td>A function that turns <code>state, event</code> into <code>new_state, effects</code>.</td></tr>
+  <tr><td><code>projection</code></td><td>The function that updates widgets from reducer-owned state.</td></tr>
+  <tr><td><code>tick</code></td><td>One runtime heartbeat: drain queues, reduce events, route effects, project windows, check shutdown.</td></tr>
+  <tr><td><code>shutdown policy</code></td><td>The declared rule for when TkVillage begins graceful shutdown.</td></tr>
+  <tr><td><code>standalone mode</code></td><td>TkVillage owns its own project directory declaration and readiness.</td></tr>
+  <tr><td><code>lionscliapp mode</code></td><td>lionscliapp hosts the command-line app and resolved project directory; TkVillage becomes ready inside commands.</td></tr>
+</table>
+</main></div><script src="assets/nav.js"></script></body></html>

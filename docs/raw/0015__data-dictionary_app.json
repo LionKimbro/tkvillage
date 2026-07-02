@@ -1,1551 +1,217 @@
 {
   "document": {
-    "document-id": "tkvillage.data-dictionary.app.v1",
+    "id": "tkvillage.data-dictionary_app.v2",
     "title": "TkVillage app.py Data Dictionary",
-    "tags": [
-      "tkvillage",
-      "python",
-      "runtimestate",
-      "datadictionary",
-      "softspec",
-      "softspecv3"
-    ],
-    "purpose": "Document the runtime data owned by src/tkvillage/app.py using SoftSpec v3, including structural schemas and data-dictionary annotations for runtime ownership, lifecycle, reset behavior, and serialization boundaries.",
-    "author": [
-      "Codex"
-    ],
-    "status": "initial",
-    "created": "2026-06-29",
-    "builds_on": [
-      "softspec.spec.v3"
-    ],
-    "type": {
-      "logical": {
-        "base": "file",
-        "format": "json",
-        "encoding": "utf-8"
-      },
-      "semantic": {
-        "base": "softspec"
-      }
-    }
-  },
-  "orientation": {
-    "summary": "TkVillage keeps runtime state in src/tkvillage/app.py. Scalar runtime values live in the module-level g dictionary. Mutable runtime containers such as registries, queues, logs, and maps live as explicit module-level dictionaries or lists. reset_app() preserves the identity of these containers by clearing and updating them rather than rebinding them.",
-    "source-file": "C:/lion/github/tkvillage/src/tkvillage/app.py",
-    "runtime-style": [
-      "procedural module-level runtime state",
-      "no runtime classes",
-      "scalar values grouped in g",
-      "registry and log containers exposed as named globals",
-      "JSON-clean semantic state where practical",
-      "runtime-only Python objects isolated in runtime records or runtime_objects"
-    ]
-  },
-  "softspec": {
-    "notes": [
-      "This SoftSpec v3 document describes live Python runtime state, not a persisted JSON file format.",
-      "Ordinary SoftSpec fields describe value structure, meaning, and JSON representability.",
-      "The data-dictionary annotations describe ownership, mutation, lifecycle, reset behavior, runtime-only boundaries, export behavior, and debug visibility.",
-      "Container identity matters: reset_app() clears and updates existing dictionaries and lists instead of rebinding them."
-    ],
-    "data-dictionary": {
-      "owner": "TkVillage runtime kernel",
-      "source_module": "src/tkvillage/app.py",
-      "source_file": "C:/lion/github/tkvillage/src/tkvillage/app.py",
-      "primary_audience": [
-        "human maintainer",
-        "LLM coding assistant",
-        "debug tooling"
-      ],
-      "reset_policy": "reset_app() preserves module-level container identities by clearing dictionaries and lists, then repopulating g and debug with default scalar fields.",
-      "persistence": "runtime-only except for config_values when save_config() writes JSON-compatible values to config.json.",
-      "rules": [
-        "Reducer-owned semantic state should remain JSON-clean where practical.",
-        "Live Tk objects and Python function references should stay in runtime records or runtime_objects, not in reducer-owned semantic state.",
-        "Bounded logs are append-only in normal use and trimmed by append_log()."
-      ]
+    "audience": {
+      "primary": "LLMs and coding agents",
+      "secondary": "human maintainers"
     },
-    "types": {
-      "python-runtime-object": {
-        "type": "opaque Python object",
-        "description": "A live Python object that should remain outside JSON-clean semantic state.",
-        "json_clean": false,
-        "examples": [
-          "tkinter.Tk",
-          "tkinter.Toplevel",
-          "tkinter widget",
-          "function reference"
-        ]
+    "format_note": "Concise JSON document using named sections and plain strings. Field names mirror tkvillage.app where useful.",
+    "scope": "Runtime data owned by tkvillage.app after the removal of the TkVillage config subsystem."
+  },
+  "summary": {
+    "runtime_module": "tkvillage.app",
+    "principle": "Scalar-ish runtime values live in g. Mutable registries and logs live as explicit module-level dictionaries and lists. Reset preserves container identities with clear()/update().",
+    "configuration_boundary": "TkVillage does not own app configuration. In the common lionscliapp case, use lionscliapp for application configuration. TkVillage may keep runtime-specific files under <lionscliapp-project>/tkvillage."
+  },
+  "g": {
+    "type": "dict",
+    "owned_by": "tkvillage.app.g",
+    "json_clean": "No. g may contain Tk objects, pathlib.Path objects, and callables.",
+    "reset_behavior": "g.clear(); g.update(defaults).",
+    "members": {
+      "name": {
+        "type": "str",
+        "default": "tkvillage",
+        "hook": "Runtime/application name."
       },
-      "function-reference": {
-        "type": "python-runtime-object",
-        "semantic_type": "callable",
-        "description": "A Python callable stored in runtime registries for lifecycle, reducer, projection, message, or service behavior.",
-        "json_clean": false
+      "root": {
+        "type": "tkinter.Tk | None",
+        "default": null,
+        "hook": "Hidden root for the process."
       },
-      "runtime-id": {
-        "type": "string",
-        "semantic_type": "runtime-identifier",
-        "description": "Readable runtime identifier generated or assigned by TkVillage.",
-        "json_clean": true,
-        "examples": [
-          "window-1",
-          "counter:singleton",
-          "svc"
-        ]
+      "host_project_dir": {
+        "type": "pathlib.Path | None",
+        "default": null,
+        "hook": "The host project directory. In lionscliapp mode this is lionscliapp's project root; in standalone mode it equals project_dir."
       },
-      "config-name": {
-        "type": "string",
-        "semantic_type": "config-name",
-        "description": "Stable configuration key name.",
-        "json_clean": true
+      "project_dir": {
+        "type": "pathlib.Path | None",
+        "default": null,
+        "hook": "TkVillage-owned runtime directory. In lionscliapp mode this becomes host_project_dir / 'tkvillage' after ensure_ready()."
       },
-      "typed-config-value": {
-        "type": [
-          "string",
-          "int",
-          "float",
-          "bool",
-          "pathlib.Path",
-          "any JSON-compatible value"
-        ],
-        "description": "Current value of a configuration key after declaration and coercion where possible.",
-        "json_clean": "mostly",
-        "notes": [
-          "Path config values are stored as pathlib.Path objects in memory and serialized as strings by save_config()."
-        ]
+      "project_dir_name": {
+        "type": "str | None",
+        "default": null,
+        "hook": "Standalone project directory name or the TkVillage subdirectory name in lionscliapp mode."
       },
-      "window-kind": {
-        "type": "string",
-        "semantic_type": "window-kind",
-        "description": "Stable symbolic name for a registered window kind.",
-        "json_clean": true,
-        "examples": [
-          "tkvillage-debug-dashboard"
-        ]
+      "project_root": {
+        "type": "pathlib.Path | None",
+        "default": null,
+        "hook": "Parent directory used to resolve standalone project-dir-name."
       },
-      "window-id": {
-        "type": "runtime-id",
-        "semantic_type": "window-id",
-        "description": "Unique identifier for one live window record.",
-        "json_clean": true,
-        "examples": [
-          "window-1"
-        ]
+      "lionscliapp": {
+        "type": "bool",
+        "default": false,
+        "hook": "True when TkVillage is hosted by lionscliapp and defers path readiness until command/runtime entry."
       },
-      "instance-key": {
-        "type": "string",
-        "semantic_type": "window-instance-key",
-        "description": "Lookup key used to summon or reuse a window instance.",
-        "json_clean": true,
-        "examples": [
-          "tkvillage-debug-dashboard:singleton",
-          "asset-browser:item-42"
-        ]
+      "is_ready": {
+        "type": "bool",
+        "default": false,
+        "hook": "True after ensure_ready() has resolved and created the TkVillage runtime directory."
       },
-      "target-id": {
-        "type": "runtime-id",
-        "semantic_type": "target-id",
-        "description": "Identifier of a routable runtime target such as a window or service.",
-        "json_clean": true
+      "is_running": {
+        "type": "bool",
+        "default": false,
+        "hook": "Runtime running flag."
       },
-      "runtime-object-id": {
-        "type": "runtime-id",
-        "semantic_type": "runtime-object-id",
-        "description": "Identifier for an object stored in runtime_objects.",
-        "json_clean": true
+      "test_mode": {
+        "type": "bool",
+        "default": false,
+        "hook": "When true, tick exceptions are re-raised after logging."
       },
-      "worker-id": {
-        "type": "runtime-id",
-        "semantic_type": "worker-id",
-        "description": "Reserved identifier for a future worker-thread record.",
-        "json_clean": true
+      "strict_effects": {
+        "type": "bool",
+        "default": false,
+        "hook": "Reserved strictness flag for effect handling."
       },
-      "id-prefix": {
-        "type": "string",
-        "semantic_type": "id-prefix",
-        "description": "Prefix consumed by next_id(prefix) when generating readable runtime ids.",
-        "json_clean": true,
-        "examples": [
-          "window",
-          "instance"
-        ]
+      "tick_interval_ms": {
+        "type": "int",
+        "default": 50,
+        "hook": "Tk after() interval for the periodic tick loop."
       },
-      "unix-timestamp-seconds": {
+      "tick_after_id": {
+        "type": "str | None",
+        "default": null,
+        "hook": "Tk after() callback id for the scheduled tick."
+      },
+      "tick_count": {
+        "type": "int",
+        "default": 0,
+        "hook": "Number of ticks completed."
+      },
+      "created_at": {
         "type": "float",
-        "logical_type": "number",
-        "semantic_type": "unix-timestamp-seconds",
-        "description": "Seconds since the Unix epoch as returned by time.time().",
-        "json_clean": true
+        "default": "time.time()",
+        "hook": "Runtime reset timestamp."
       },
-      "window-multiplicity": {
-        "type": "string",
-        "semantic_type": "window-multiplicity",
-        "description": "Summon and reuse policy declared by a window kind.",
-        "vocabulary": {
-          "singleton": "One instance exists; summon raises the existing window.",
-          "per-key": "One instance exists per caller-provided key.",
-          "free-instance": "Every summon creates a fresh instance.",
-          "embedded": "Declared but not implemented in v1.",
-          "modal": "Declared but not implemented in v1."
-        },
-        "vocabulary_mode": "closed",
-        "json_clean": true
+      "max_log_entries": {
+        "type": "int",
+        "default": 200,
+        "hook": "Maximum entries kept in bounded runtime logs."
       },
-      "semantic-event": {
-        "type": "object",
-        "description": "JSON-friendly dictionary representing application meaning.",
-        "keys": {
-          "type": {
-            "type": "string",
-            "required": true,
-            "description": "Stable symbolic event name."
-          }
-        },
-        "additional_keys": true,
-        "json_clean": true
+      "shutdown_policy": {
+        "type": "\"explicit\" | \"on-last-window-close\" | \"on-window-close\" | None",
+        "default": null,
+        "hook": "Policy checked at the end of each tick."
       },
-      "effect": {
-        "type": "object",
-        "description": "Explicit request for runtime work outside a reducer.",
-        "keys": {
-          "type": {
-            "type": "string",
-            "required": true,
-            "description": "Stable symbolic effect name."
-          }
-        },
-        "additional_keys": true,
-        "json_clean": true
+      "shutdown_window_kind": {
+        "type": "str | None",
+        "default": null,
+        "hook": "Window kind watched by on-window-close shutdown policy."
       },
-      "message-envelope": {
-        "type": "object",
-        "description": "Event envelope created by send_message().",
-        "keys": {
-          "type": {
-            "type": "string",
-            "required": true,
-            "description": "Envelope event type.",
-            "constraints": {
-              "allowed_values": [
-                "MESSAGE"
-              ]
-            }
-          },
-          "source_id": {
-            "type": [
-              "target-id",
-              "null"
-            ],
-            "required": true,
-            "nullable": true,
-            "description": "Optional sender target id."
-          },
-          "message": {
-            "type": "object or scalar message payload",
-            "required": true,
-            "description": "Caller-provided message payload."
-          }
-        },
-        "additional_keys": true,
-        "json_clean": "mostly"
-      }
-    },
-    "schemas": {
-      "app-module-runtime-state": {
-        "title": "app.py Runtime State",
-        "description": "The complete module-level runtime data surface owned by src/tkvillage/app.py.",
-        "rules": [
-          "Scalar runtime values live inside g.",
-          "Mutable registries, queues, logs, and maps live as explicit module-level dictionaries or lists.",
-          "reset_app() preserves container identity by clearing and updating existing containers.",
-          "Runtime-only Python objects should not be inserted into reducer-owned semantic state."
-        ],
-        "data-dictionary": {
-          "owner": "TkVillage runtime kernel",
-          "source_module": "src/tkvillage/app.py",
-          "source_file": "C:/lion/github/tkvillage/src/tkvillage/app.py",
-          "created_by": "module import initializes empty containers; reset_app() populates defaults",
-          "cleared_by": [
-            "reset_app()",
-            "shutdown() for selected live Tk resources"
-          ],
-          "reset_policy": "Container identities are preserved across reset_app(); contents are cleared and selected dictionaries are repopulated.",
-          "primary_audience": [
-            "maintainers",
-            "tests",
-            "debug tooling",
-            "LLM coding assistants"
-          ]
-        },
-        "structure": {
-          "type": "object",
-          "keys": {
-            "g": {
-              "ref": "g-runtime-state",
-              "required": true,
-              "description": "Small global dictionary for scalar runtime values and root/project handles.",
-              "json_clean": "mixed",
-              "data-dictionary": {
-                "owned_by": "app.g",
-                "source_module": "src/tkvillage/app.py",
-                "python_kind": "dict",
-                "identity_policy": "Preserved across reset_app() with clear() and update().",
-                "reset_behavior": "Cleared and repopulated with default scalar values by reset_app().",
-                "used_for": "Runtime identity, Tk root handle, project directory, tick loop settings, and log bounds.",
-                "runtime_only": true,
-                "export_behavior": "Debug/export tools should convert runtime-only values such as root and project_dir to summaries or strings."
-              }
-            },
-            "config_declarations": {
-              "type": "object",
-              "key_type": "config-name",
-              "value_type": "config-declaration-record",
-              "required": true,
-              "description": "Registry of declared configuration keys.",
-              "json_clean": true,
-              "data-dictionary": {
-                "owned_by": "app.config_declarations",
-                "source_module": "src/tkvillage/config.py",
-                "python_kind": "dict",
-                "identity_policy": "Preserved across reset_app() with clear().",
-                "reset_behavior": "Cleared by reset_app(); repopulated by declare_config() calls.",
-                "used_for": "Configuration declaration metadata consumed by load_config(), set_config(), and list_config().",
-                "runtime_only": false,
-                "export_behavior": "May be shown directly in debug views; not itself persisted by save_config()."
-              }
-            },
-            "config_values": {
-              "type": "object",
-              "key_type": "config-name",
-              "value_type": "typed-config-value",
-              "required": true,
-              "description": "Current effective configuration values.",
-              "json_clean": "mostly",
-              "data-dictionary": {
-                "owned_by": "app.config_values",
-                "source_module": "src/tkvillage/config.py",
-                "python_kind": "dict",
-                "identity_policy": "Preserved across reset_app() with clear().",
-                "reset_behavior": "Cleared by reset_app(); populated by declare_config(), load_config(), and set_config().",
-                "used_for": "Runtime configuration lookup and persistence through config.json.",
-                "runtime_only": false,
-                "export_behavior": "save_config() serializes Path values as strings before writing config.json."
-              }
-            },
-            "window_kinds": {
-              "type": "object",
-              "key_type": "window-kind",
-              "value_type": "window-kind-record",
-              "required": true,
-              "description": "Registry of window kind records that describe summon policy and lifecycle functions.",
-              "json_clean": false,
-              "data-dictionary": {
-                "owned_by": "app.window_kinds",
-                "source_module": "src/tkvillage/windows.py",
-                "python_kind": "dict",
-                "identity_policy": "Preserved across reset_app() with clear().",
-                "reset_behavior": "Cleared by reset_app(); populated by register_window_kind() and register_debug_windows().",
-                "used_for": "Summoning, creating, reducing, projecting, and lifecycle handling for window records.",
-                "runtime_only": true,
-                "export_behavior": "Debug snapshots include only JSON-friendly summaries such as title, multiplicity, and debug_label."
-              }
-            },
-            "windows": {
-              "type": "object",
-              "key_type": "window-id",
-              "value_type": "window-record",
-              "required": true,
-              "description": "Registry of live window records by window_id.",
-              "json_clean": false,
-              "data-dictionary": {
-                "owned_by": "app.windows",
-                "source_module": "src/tkvillage/windows.py",
-                "python_kind": "dict",
-                "identity_policy": "Preserved across reset_app() with clear().",
-                "reset_behavior": "Cleared by reset_app(); individual windows are removed by destroy_window().",
-                "used_for": "Live window lookup, event routing, projection, lifecycle hooks, and debug summaries.",
-                "runtime_only": true,
-                "export_behavior": "Debug snapshots should summarize live records and avoid serializing Tk objects or widget references."
-              }
-            },
-            "windows_by_instance_key": {
-              "type": "object",
-              "key_type": "instance-key",
-              "value_type": "window-id",
-              "required": true,
-              "description": "Lookup table from summon instance_key to live window_id.",
-              "json_clean": true,
-              "data-dictionary": {
-                "owned_by": "app.windows_by_instance_key",
-                "source_module": "src/tkvillage/windows.py",
-                "python_kind": "dict",
-                "identity_policy": "Preserved across reset_app() with clear().",
-                "reset_behavior": "Cleared by reset_app(); entries are added by realize_window() and removed by destroy_window().",
-                "used_for": "Reusing singleton and per-key windows when summoned again.",
-                "runtime_only": true,
-                "export_behavior": "May be included in debug output as a string-to-string map."
-              }
-            },
-            "targets": {
-              "type": "object",
-              "key_type": "target-id",
-              "value_type": "target-record",
-              "required": true,
-              "description": "Registry of queued runtime targets, including windows and non-window services.",
-              "json_clean": false,
-              "data-dictionary": {
-                "owned_by": "app.targets",
-                "source_module": "src/tkvillage/messages.py and src/tkvillage/windows.py",
-                "python_kind": "dict",
-                "identity_policy": "Preserved across reset_app() with clear().",
-                "reset_behavior": "Cleared by reset_app(); window targets are added by realize_window() and removed by destroy_window(); service targets are added by register_service_target().",
-                "used_for": "Queueing and dispatching events/messages to windows and services.",
-                "runtime_only": true,
-                "export_behavior": "Debug output should avoid serializing handler callables and live inbox aliases directly."
-              }
-            },
-            "runtime_objects": {
-              "type": "object",
-              "key_type": "runtime-object-id",
-              "value_type": "python-runtime-object",
-              "required": true,
-              "description": "Optional registry for Python objects that should stay outside semantic state.",
-              "json_clean": false,
-              "data-dictionary": {
-                "owned_by": "app.runtime_objects",
-                "source_module": "src/tkvillage/app.py",
-                "python_kind": "dict",
-                "identity_policy": "Preserved across reset_app() with clear().",
-                "reset_behavior": "Cleared by reset_app().",
-                "used_for": "Parking live Python objects away from JSON-clean semantic state.",
-                "runtime_only": true,
-                "export_behavior": "Do not serialize values; export only ids and summaries if needed."
-              }
-            },
-            "event_log": {
-              "type": "array",
-              "items": "log-entry",
-              "required": true,
-              "description": "Bounded log of recently posted runtime events.",
-              "json_clean": "mostly",
-              "data-dictionary": {
-                "owned_by": "app.event_log",
-                "source_module": "src/tkvillage/events.py",
-                "python_kind": "list",
-                "identity_policy": "Preserved across reset_app() with clear().",
-                "reset_behavior": "Cleared by reset_app().",
-                "used_for": "Debugging recent post_event() calls.",
-                "runtime_only": true,
-                "export_behavior": "Included in debug snapshots as recent_events; bounded by g.max_log_entries.",
-                "debug_visibility": "Visible in get_debug_snapshot()."
-              }
-            },
-            "effect_log": {
-              "type": "array",
-              "items": "log-entry",
-              "required": true,
-              "description": "Bounded log of recently routed effects.",
-              "json_clean": "mostly",
-              "data-dictionary": {
-                "owned_by": "app.effect_log",
-                "source_module": "src/tkvillage/effects.py",
-                "python_kind": "list",
-                "identity_policy": "Preserved across reset_app() with clear().",
-                "reset_behavior": "Cleared by reset_app().",
-                "used_for": "Debugging route_effect() and route_effects() behavior.",
-                "runtime_only": true,
-                "export_behavior": "Included in debug snapshots as recent_effects; bounded by g.max_log_entries.",
-                "debug_visibility": "Visible in get_debug_snapshot()."
-              }
-            },
-            "message_log": {
-              "type": "array",
-              "items": "log-entry",
-              "required": true,
-              "description": "Bounded log of recently sent runtime messages.",
-              "json_clean": "mostly",
-              "data-dictionary": {
-                "owned_by": "app.message_log",
-                "source_module": "src/tkvillage/messages.py",
-                "python_kind": "list",
-                "identity_policy": "Preserved across reset_app() with clear().",
-                "reset_behavior": "Cleared by reset_app().",
-                "used_for": "Debugging send_message() calls and message envelopes.",
-                "runtime_only": true,
-                "export_behavior": "Included in debug snapshots as recent_messages; bounded by g.max_log_entries.",
-                "debug_visibility": "Visible in get_debug_snapshot()."
-              }
-            },
-            "runtime_log": {
-              "type": "array",
-              "items": "log-entry",
-              "required": true,
-              "description": "Bounded log of runtime notes, unknown effects, and tick exceptions.",
-              "json_clean": "mostly",
-              "data-dictionary": {
-                "owned_by": "app.runtime_log",
-                "source_module": "src/tkvillage/effects.py and src/tkvillage/tick.py",
-                "python_kind": "list",
-                "identity_policy": "Preserved across reset_app() with clear().",
-                "reset_behavior": "Cleared by reset_app().",
-                "used_for": "Debugging unknown effects, runtime notes, and tick failures.",
-                "runtime_only": true,
-                "export_behavior": "Included in debug snapshots as runtime_log; bounded by g.max_log_entries.",
-                "debug_visibility": "Visible in get_debug_snapshot()."
-              }
-            },
-            "worker_records": {
-              "type": "object",
-              "key_type": "worker-id",
-              "value_type": "worker-record",
-              "required": true,
-              "description": "Reserved registry for future worker-thread records.",
-              "json_clean": false,
-              "data-dictionary": {
-                "owned_by": "app.worker_records",
-                "source_module": "src/tkvillage/app.py",
-                "python_kind": "dict",
-                "identity_policy": "Preserved across reset_app() with clear().",
-                "reset_behavior": "Cleared by reset_app().",
-                "used_for": "Reserved for future worker-thread integration.",
-                "runtime_only": true,
-                "export_behavior": "No current export behavior; future worker objects should not be serialized directly."
-              }
-            },
-            "debug": {
-              "ref": "debug-runtime-state",
-              "required": true,
-              "description": "Small runtime dictionary for debug mode and debug snapshot state.",
-              "json_clean": "mostly",
-              "data-dictionary": {
-                "owned_by": "app.debug",
-                "source_module": "src/tkvillage/debug.py",
-                "python_kind": "dict",
-                "identity_policy": "Preserved across reset_app() with clear() and update().",
-                "reset_behavior": "Cleared and repopulated by reset_app() with enabled=false and last_snapshot=null.",
-                "used_for": "Debug mode flag and cached last debug snapshot.",
-                "runtime_only": true,
-                "export_behavior": "last_snapshot is itself debug/export material and may contain summarized runtime state."
-              }
-            },
-            "id_counters": {
-              "type": "object",
-              "key_type": "id-prefix",
-              "value_type": "int",
-              "required": true,
-              "description": "Counter map used by next_id(prefix) to generate stable readable runtime identifiers.",
-              "json_clean": true,
-              "data-dictionary": {
-                "owned_by": "app.id_counters",
-                "source_module": "src/tkvillage/app.py",
-                "python_kind": "dict",
-                "identity_policy": "Preserved across reset_app() with clear().",
-                "reset_behavior": "Cleared by reset_app(); incremented by next_id(prefix).",
-                "used_for": "Generating readable runtime ids such as window-1 and instance-1.",
-                "runtime_only": true,
-                "export_behavior": "May be shown in debug output if useful; not persisted."
-              }
-            }
-          },
-          "additional_keys": false
-        }
+      "shutdown_requested": {
+        "type": "bool",
+        "default": false,
+        "hook": "Set by request_shutdown()."
       },
-      "g-runtime-state": {
-        "title": "g Runtime State",
-        "description": "Scalar runtime values and root/project handles stored in app.g.",
-        "data-dictionary": {
-          "owned_by": "app.g",
-          "source_module": "src/tkvillage/app.py",
-          "reset_behavior": "reset_app() clears g and repopulates all listed keys.",
-          "identity_policy": "The dictionary identity is preserved; individual field values are replaced during reset.",
-          "persistence": "runtime-only; project_dir points to where config persistence occurs."
-        },
-        "structure": {
-          "type": "object",
-          "keys": {
-            "name": {
-              "type": "string",
-              "semantic_type": "application-name",
-              "required": true,
-              "description": "Current TkVillage application name used for runtime identity and debug snapshots.",
-              "default": "tkvillage",
-              "json_clean": true,
-              "data-dictionary": {
-                "owned_by": "app.g.name",
-                "set_by": [
-                  "reset_app()",
-                  "set_runtime_identity()"
-                ],
-                "debug_visibility": "Appears in get_debug_snapshot().app.name."
-              }
-            },
-            "root": {
-              "type": [
-                "tkinter.Tk",
-                "null"
-              ],
-              "semantic_type": "hidden-tk-root",
-              "required": true,
-              "nullable": true,
-              "description": "The hidden Tk root that anchors the Tk interpreter, event loop, after scheduling, bindings, and clipboard access.",
-              "default": null,
-              "json_clean": false,
-              "data-dictionary": {
-                "owned_by": "app.g.root",
-                "created_by": "ensure_root()",
-                "cleared_by": [
-                  "reset_app()",
-                  "shutdown()"
-                ],
-                "lifecycle": "Created lazily when needed; destroyed during reset or shutdown.",
-                "runtime_only": true,
-                "export_behavior": "Do not serialize. Represent only by a debug summary if needed.",
-                "debug_visibility": "Not directly included in get_debug_snapshot()."
-              }
-            },
-            "project_dir": {
-              "type": [
-                "pathlib.Path",
-                "null"
-              ],
-              "logical_type": "string",
-              "semantic_type": "project-local-runtime-directory",
-              "required": true,
-              "nullable": true,
-              "description": "Resolved directory used for project-local runtime data such as config.json.",
-              "default": null,
-              "json_clean": false,
-              "data-dictionary": {
-                "owned_by": "app.g.project_dir",
-                "set_by": [
-                  "reset_app()",
-                  "declare_app()"
-                ],
-                "lifecycle": "Resolved during declare_app(); cleared during reset.",
-                "runtime_only": false,
-                "export_behavior": "Convert to string when represented in JSON or debug output."
-              }
-            },
-            "is_running": {
-              "type": "bool",
-              "logical_type": "boolean",
-              "required": true,
-              "description": "Whether the runtime should be considered active and eligible to schedule ticks.",
-              "default": false,
-              "json_clean": true,
-              "data-dictionary": {
-                "owned_by": "app.g.is_running",
-                "set_by": [
-                  "reset_app()",
-                  "set_runtime_identity()",
-                  "start_tick_loop()",
-                  "stop_tick_loop()",
-                  "shutdown()"
-                ],
-                "used_for": "Controls tick scheduling eligibility."
-              }
-            },
-            "test_mode": {
-              "type": "bool",
-              "logical_type": "boolean",
-              "required": true,
-              "description": "Whether the runtime is executing under test-oriented behavior.",
-              "default": false,
-              "json_clean": true,
-              "data-dictionary": {
-                "owned_by": "app.g.test_mode",
-                "set_by": [
-                  "reset_app()",
-                  "set_runtime_identity()"
-                ],
-                "used_for": "tick_once() re-raises tick exceptions when test_mode is true.",
-                "debug_visibility": "Appears in get_debug_snapshot().app.test_mode."
-              }
-            },
-            "strict_effects": {
-              "type": "bool",
-              "logical_type": "boolean",
-              "required": true,
-              "description": "Whether unknown effects should raise an exception instead of being logged.",
-              "default": false,
-              "json_clean": true,
-              "data-dictionary": {
-                "owned_by": "app.g.strict_effects",
-                "set_by": [
-                  "reset_app()"
-                ],
-                "used_for": "Controls route_effect() behavior for unknown effect types."
-              }
-            },
-            "tick_interval_ms": {
-              "type": "int",
-              "logical_type": "number",
-              "semantic_type": "milliseconds",
-              "required": true,
-              "description": "Delay between scheduled tick loop iterations.",
-              "default": 50,
-              "constraints": {
-                "minimum": 1,
-                "recommended_range": "33-100 for ordinary TkVillage GUI work"
-              },
-              "json_clean": true,
-              "data-dictionary": {
-                "owned_by": "app.g.tick_interval_ms",
-                "set_by": [
-                  "reset_app()",
-                  "set_runtime_identity()"
-                ],
-                "used_for": "schedule_next_tick() delay.",
-                "debug_visibility": "Appears in get_debug_snapshot().app.tick_interval_ms."
-              }
-            },
-            "tick_after_id": {
-              "type": [
-                "tkinter after identifier",
-                "null"
-              ],
-              "semantic_type": "tk-after-handle",
-              "required": true,
-              "nullable": true,
-              "description": "Tk after() handle for the next scheduled tick loop callback.",
-              "default": null,
-              "json_clean": false,
-              "data-dictionary": {
-                "owned_by": "app.g.tick_after_id",
-                "set_by": [
-                  "schedule_next_tick()",
-                  "stop_tick_loop()",
-                  "reset_app()"
-                ],
-                "lifecycle": "Set when the tick loop schedules a callback; cleared when the loop is stopped or reset.",
-                "runtime_only": true,
-                "export_behavior": "Do not serialize."
-              }
-            },
-            "tick_count": {
-              "type": "int",
-              "logical_type": "number",
-              "required": true,
-              "description": "Number of completed runtime ticks since the last reset_app().",
-              "default": 0,
-              "constraints": {
-                "minimum": 0
-              },
-              "json_clean": true,
-              "data-dictionary": {
-                "owned_by": "app.g.tick_count",
-                "set_by": [
-                  "reset_app()",
-                  "tick_once()"
-                ],
-                "used_for": "Runtime progress/debug counter.",
-                "debug_visibility": "Appears in get_debug_snapshot().app.tick_count."
-              }
-            },
-            "created_at": {
-              "type": "unix-timestamp-seconds",
-              "required": true,
-              "description": "Timestamp marking when the current runtime state was initialized.",
-              "default": "time.time() at reset_app()",
-              "json_clean": true,
-              "data-dictionary": {
-                "owned_by": "app.g.created_at",
-                "set_by": [
-                  "reset_app()"
-                ],
-                "lifecycle": "Replaced each time runtime state is reset."
-              }
-            },
-            "max_log_entries": {
-              "type": "int",
-              "logical_type": "number",
-              "required": true,
-              "description": "Maximum number of entries retained in bounded runtime logs.",
-              "default": 200,
-              "constraints": {
-                "minimum": 1
-              },
-              "json_clean": true,
-              "data-dictionary": {
-                "owned_by": "app.g.max_log_entries",
-                "set_by": [
-                  "reset_app()"
-                ],
-                "used_for": "append_log() trims event_log, effect_log, message_log, and runtime_log to this size."
-              }
-            },
-            "shutdown_policy": {
-              "type": [
-                "string",
-                "null"
-              ],
-              "required": true,
-              "nullable": true,
-              "description": "Declared graceful shutdown policy.",
-              "default": null,
-              "constraints": {
-                "allowed_values": [
-                  "explicit",
-                  "on-last-window-close",
-                  "on-window-close",
-                  null
-                ]
-              },
-              "json_clean": true,
-              "data-dictionary": {
-                "owned_by": "app.g.shutdown_policy",
-                "set_by": [
-                  "reset_app()",
-                  "declare_app()"
-                ],
-                "used_for": "maybe_begin_shutdown() policy decision at tick end."
-              }
-            },
-            "shutdown_window_kind": {
-              "type": [
-                "window-kind",
-                "null"
-              ],
-              "required": true,
-              "nullable": true,
-              "description": "Window kind watched by the on-window-close shutdown policy.",
-              "default": null,
-              "json_clean": true,
-              "data-dictionary": {
-                "owned_by": "app.g.shutdown_window_kind",
-                "set_by": [
-                  "reset_app()",
-                  "declare_app()"
-                ],
-                "used_for": "maybe_begin_shutdown() checks whether this kind has closed."
-              }
-            },
-            "shutdown_requested": {
-              "type": "bool",
-              "logical_type": "boolean",
-              "required": true,
-              "description": "Explicit shutdown request flag set by request_shutdown().",
-              "default": false,
-              "json_clean": true,
-              "data-dictionary": {
-                "owned_by": "app.g.shutdown_requested",
-                "set_by": [
-                  "reset_app()",
-                  "request_shutdown()"
-                ],
-                "used_for": "explicit shutdown policy."
-              }
-            },
-            "shutdown_reason": {
-              "type": [
-                "any value",
-                "null"
-              ],
-              "required": true,
-              "nullable": true,
-              "description": "Optional reason supplied to request_shutdown().",
-              "default": null,
-              "json_clean": "mixed",
-              "data-dictionary": {
-                "owned_by": "app.g.shutdown_reason",
-                "set_by": [
-                  "reset_app()",
-                  "request_shutdown()"
-                ],
-                "used_for": "Debugging/logging the explicit shutdown request."
-              }
-            },
-            "is_shutting_down": {
-              "type": "bool",
-              "logical_type": "boolean",
-              "required": true,
-              "description": "Whether graceful or hard shutdown has begun.",
-              "default": false,
-              "json_clean": true,
-              "data-dictionary": {
-                "owned_by": "app.g.is_shutting_down",
-                "set_by": [
-                  "reset_app()",
-                  "begin_shutdown()",
-                  "shutdown()"
-                ],
-                "used_for": "Prevents duplicate graceful shutdown starts."
-              }
-            },
-            "shutdown_handler": {
-              "type": [
-                "function-reference",
-                "null"
-              ],
-              "required": true,
-              "nullable": true,
-              "description": "Optional no-argument callable invoked once when shutdown begins.",
-              "default": null,
-              "json_clean": false,
-              "data-dictionary": {
-                "owned_by": "app.g.shutdown_handler",
-                "set_by": [
-                  "reset_app()",
-                  "declare_app()"
-                ],
-                "used_for": "User-supplied shutdown procedure.",
-                "runtime_only": true
-              }
-            },
-            "shutdown_handler_called": {
-              "type": "bool",
-              "logical_type": "boolean",
-              "required": true,
-              "description": "Whether shutdown_handler has already been invoked.",
-              "default": false,
-              "json_clean": true,
-              "data-dictionary": {
-                "owned_by": "app.g.shutdown_handler_called",
-                "set_by": [
-                  "reset_app()",
-                  "call_shutdown_handler()"
-                ],
-                "used_for": "Ensures the shutdown handler runs at most once."
-              }
-            },
-            "has_had_window": {
-              "type": "bool",
-              "logical_type": "boolean",
-              "required": true,
-              "description": "Whether any window has been realized since reset.",
-              "default": false,
-              "json_clean": true,
-              "data-dictionary": {
-                "owned_by": "app.g.has_had_window",
-                "set_by": [
-                  "reset_app()",
-                  "realize_window()"
-                ],
-                "used_for": "Prevents on-last-window-close from firing before the first window is summoned."
-              }
-            },
-            "shutdown_window_kind_seen": {
-              "type": "bool",
-              "logical_type": "boolean",
-              "required": true,
-              "description": "Whether a window of shutdown_window_kind has been realized since reset.",
-              "default": false,
-              "json_clean": true,
-              "data-dictionary": {
-                "owned_by": "app.g.shutdown_window_kind_seen",
-                "set_by": [
-                  "reset_app()",
-                  "realize_window()"
-                ],
-                "used_for": "Prevents on-window-close from firing before the watched window kind is summoned."
-              }
-            }
-          },
-          "additional_keys": false
-        }
+      "shutdown_reason": {
+        "type": "JSON-friendly value | None",
+        "default": null,
+        "hook": "Optional reason supplied to request_shutdown()."
       },
-      "debug-runtime-state": {
-        "title": "Debug Runtime State",
-        "description": "Small dictionary storing debug mode and the latest debug snapshot.",
-        "data-dictionary": {
-          "owned_by": "app.debug",
-          "source_module": "src/tkvillage/debug.py",
-          "reset_behavior": "reset_app() clears debug and sets enabled=false and last_snapshot=null.",
-          "identity_policy": "The dictionary identity is preserved across reset_app()."
-        },
-        "structure": {
-          "type": "object",
-          "keys": {
-            "enabled": {
-              "type": "bool",
-              "logical_type": "boolean",
-              "required": true,
-              "description": "Whether debug mode is currently enabled.",
-              "default": false,
-              "json_clean": true,
-              "data-dictionary": {
-                "owned_by": "app.debug.enabled",
-                "set_by": [
-                  "reset_app()",
-                  "toggle_debug()"
-                ],
-                "used_for": "Controls whether the debug dashboard is summoned."
-              }
-            },
-            "last_snapshot": {
-              "type": [
-                "debug snapshot object",
-                "null"
-              ],
-              "required": true,
-              "nullable": true,
-              "description": "Most recent debug snapshot produced by get_debug_snapshot().",
-              "default": null,
-              "json_clean": "mostly",
-              "data-dictionary": {
-                "owned_by": "app.debug.last_snapshot",
-                "set_by": [
-                  "reset_app()",
-                  "get_debug_snapshot()"
-                ],
-                "used_for": "Caches the latest generated debug snapshot.",
-                "export_behavior": "Designed for JSON output via json.dumps(..., default=str)."
-              }
-            }
-          },
-          "additional_keys": false
-        }
+      "is_shutting_down": {
+        "type": "bool",
+        "default": false,
+        "hook": "True while graceful or hard shutdown is underway."
       },
-      "config-declaration-record": {
-        "title": "Config Declaration Record",
-        "description": "Record stored in config_declarations by declare_config().",
-        "data-dictionary": {
-          "owned_by": "app.config_declarations[config-name]",
-          "source_module": "src/tkvillage/config.py",
-          "created_by": "declare_config()",
-          "used_for": "Type, default, description, and choices metadata for configuration keys.",
-          "runtime_only": false
-        },
-        "structure": {
-          "type": "object",
-          "keys": {
-            "name": {
-              "type": "config-name",
-              "required": true,
-              "description": "Configuration name string.",
-              "json_clean": true
-            },
-            "type": {
-              "type": "string",
-              "semantic_type": "config-value-kind",
-              "required": true,
-              "description": "Declared configuration type.",
-              "constraints": {
-                "allowed_values": [
-                  "string",
-                  "int",
-                  "float",
-                  "bool",
-                  "path",
-                  "choice"
-                ]
-              },
-              "json_clean": true
-            },
-            "default": {
-              "type": "typed-config-value",
-              "required": false,
-              "description": "Default value for this configuration key.",
-              "json_clean": "mostly"
-            },
-            "description": {
-              "type": "string",
-              "semantic_type": "human-readable-description",
-              "required": true,
-              "description": "Human-readable explanation of the configuration key.",
-              "json_clean": true
-            },
-            "choices": {
-              "type": "array",
-              "items": "typed-config-value",
-              "required": true,
-              "description": "Allowed choice values when type is choice; otherwise an empty list.",
-              "json_clean": "mostly"
-            }
-          },
-          "additional_keys": false
-        }
+      "shutdown_handler": {
+        "type": "callable | None",
+        "default": null,
+        "hook": "Optional one function called once when shutdown starts."
       },
-      "window-kind-record": {
-        "title": "Window Kind Record",
-        "description": "Record stored in window_kinds by register_window_kind().",
-        "data-dictionary": {
-          "owned_by": "app.window_kinds[window-kind]",
-          "source_module": "src/tkvillage/windows.py",
-          "created_by": "register_window_kind()",
-          "cleared_by": "reset_app()",
-          "used_for": "Defines how windows of this kind are summoned, created, reduced, projected, and handled during lifecycle transitions.",
-          "runtime_only": true,
-          "export_behavior": "Debug snapshots include only title, multiplicity, and debug_label."
-        },
-        "structure": {
-          "type": "object",
-          "keys": {
-            "window_kind": {
-              "type": "window-kind",
-              "required": true,
-              "description": "Stable window kind string.",
-              "json_clean": true
-            },
-            "title": {
-              "type": "string",
-              "semantic_type": "window-title",
-              "required": true,
-              "description": "Human-readable window title.",
-              "json_clean": true
-            },
-            "multiplicity": {
-              "type": "window-multiplicity",
-              "required": true,
-              "description": "Summon policy for this window kind.",
-              "json_clean": true
-            },
-            "create": {
-              "type": "function-reference",
-              "required": true,
-              "description": "Function that builds the Tk widgets for a realized window.",
-              "json_clean": false,
-              "data-dictionary": {
-                "runtime_only": true,
-                "called_by": "realize_window()"
-              }
-            },
-            "make_initial_state": {
-              "type": "function-reference",
-              "required": true,
-              "description": "Function that creates the reducer-owned initial state.",
-              "json_clean": false,
-              "data-dictionary": {
-                "runtime_only": true,
-                "called_by": "realize_window()"
-              }
-            },
-            "reduce_event": {
-              "type": "function-reference",
-              "required": true,
-              "description": "Reducer function for semantic events.",
-              "json_clean": false,
-              "data-dictionary": {
-                "runtime_only": true,
-                "called_by": "reduce_window_event()"
-              }
-            },
-            "project": {
-              "type": "function-reference",
-              "required": true,
-              "description": "Projection function that updates widgets from state.",
-              "json_clean": false,
-              "data-dictionary": {
-                "runtime_only": true,
-                "called_by": "project_window()"
-              }
-            },
-            "on_show": {
-              "type": [
-                "function-reference",
-                "null"
-              ],
-              "required": true,
-              "nullable": true,
-              "description": "Optional hook called when a window is raised.",
-              "json_clean": false,
-              "data-dictionary": {
-                "runtime_only": true,
-                "called_by": "raise_window()"
-              }
-            },
-            "on_close": {
-              "type": [
-                "function-reference",
-                "null"
-              ],
-              "required": true,
-              "nullable": true,
-              "description": "Optional hook called before a window is destroyed through close_window().",
-              "json_clean": false,
-              "data-dictionary": {
-                "runtime_only": true,
-                "called_by": "close_window()"
-              }
-            },
-            "on_destroy": {
-              "type": [
-                "function-reference",
-                "null"
-              ],
-              "required": true,
-              "nullable": true,
-              "description": "Optional hook called while destroying a window.",
-              "json_clean": false,
-              "data-dictionary": {
-                "runtime_only": true,
-                "called_by": "destroy_window()"
-              }
-            },
-            "on_tick": {
-              "type": [
-                "function-reference",
-                "null"
-              ],
-              "required": true,
-              "nullable": true,
-              "description": "Optional hook called during tick processing.",
-              "json_clean": false,
-              "data-dictionary": {
-                "runtime_only": true,
-                "called_by": "tick_once()"
-              }
-            },
-            "debug_label": {
-              "type": "string",
-              "semantic_type": "debug-label",
-              "required": true,
-              "description": "Human-readable label for debug tools.",
-              "json_clean": true
-            }
-          },
-          "additional_keys": false
-        }
+      "shutdown_handler_called": {
+        "type": "bool",
+        "default": false,
+        "hook": "Prevents duplicate shutdown handler calls."
       },
-      "window-record": {
-        "title": "Window Record",
-        "description": "Live window record stored in windows by realize_window().",
-        "data-dictionary": {
-          "owned_by": "app.windows[window-id]",
-          "source_module": "src/tkvillage/windows.py",
-          "created_by": "realize_window()",
-          "cleared_by": [
-            "destroy_window()",
-            "reset_app()"
-          ],
-          "lifecycle": "Created when a window is realized; removed from windows when destroyed; associated target and instance-key entries are removed at the same time.",
-          "runtime_only": true,
-          "export_behavior": "Debug snapshots use summarize_window() rather than serializing this record directly."
-        },
-        "structure": {
-          "type": "object",
-          "keys": {
-            "target_id": {
-              "type": "target-id",
-              "required": true,
-              "description": "Same identifier as window_id for routable window targets.",
-              "json_clean": true
-            },
-            "window_id": {
-              "type": "window-id",
-              "required": true,
-              "description": "Unique live window id.",
-              "json_clean": true
-            },
-            "window_kind": {
-              "type": "window-kind",
-              "required": true,
-              "description": "Registered window kind string.",
-              "json_clean": true
-            },
-            "multiplicity": {
-              "type": "window-multiplicity",
-              "required": true,
-              "description": "Window multiplicity copied from the kind record.",
-              "json_clean": true
-            },
-            "instance_key": {
-              "type": "instance-key",
-              "required": true,
-              "description": "Summon lookup key.",
-              "json_clean": true
-            },
-            "key": {
-              "type": [
-                "any object identity",
-                "null"
-              ],
-              "required": true,
-              "nullable": true,
-              "description": "Optional per-key object identity supplied by caller.",
-              "json_clean": "mostly"
-            },
-            "payload": {
-              "type": [
-                "summon payload",
-                "null"
-              ],
-              "required": true,
-              "nullable": true,
-              "description": "Optional summon payload supplied by caller.",
-              "json_clean": "mostly"
-            },
-            "toplevel": {
-              "type": "tkinter.Toplevel",
-              "required": true,
-              "description": "Live Tk toplevel object for the window.",
-              "json_clean": false,
-              "data-dictionary": {
-                "runtime_only": true,
-                "export_behavior": "Do not serialize. Represent only by debug label or object summary."
-              }
-            },
-            "state": {
-              "type": "object",
-              "required": true,
-              "description": "Reducer-owned semantic state dictionary for this window.",
-              "json_clean": "should remain JSON-clean where practical",
-              "additional_keys": true,
-              "data-dictionary": {
-                "owned_by": "window reducer for this window kind",
-                "created_by": "kind.make_initial_state()",
-                "updated_by": "kind.reduce_event()",
-                "export_behavior": "May appear in debug snapshots; should avoid live Python objects."
-              }
-            },
-            "event_queue": {
-              "type": "array",
-              "items": "semantic-event",
-              "required": true,
-              "description": "List of queued semantic events for this window.",
-              "json_clean": true,
-              "data-dictionary": {
-                "owned_by": "app.windows[window-id].event_queue",
-                "updated_by": [
-                  "post_event()",
-                  "tick_once()"
-                ],
-                "lifecycle": "Aliased by the corresponding target-record inbox."
-              }
-            },
-            "widgets": {
-              "type": "object",
-              "key_type": "string",
-              "value_type": "python-runtime-object",
-              "required": true,
-              "description": "Dictionary of runtime-only widget references.",
-              "json_clean": false,
-              "data-dictionary": {
-                "runtime_only": true,
-                "export_behavior": "Do not serialize widget objects."
-              }
-            },
-            "created_at": {
-              "type": "unix-timestamp-seconds",
-              "required": true,
-              "description": "Window creation timestamp.",
-              "json_clean": true
-            },
-            "last_shown_at": {
-              "type": [
-                "unix-timestamp-seconds",
-                "null"
-              ],
-              "required": true,
-              "nullable": true,
-              "description": "Timestamp of most recent raise_window() call, or null before first raise.",
-              "json_clean": true
-            },
-            "is_open": {
-              "type": "bool",
-              "logical_type": "boolean",
-              "required": true,
-              "description": "Whether the window is considered open.",
-              "json_clean": true
-            },
-            "is_destroyed": {
-              "type": "bool",
-              "logical_type": "boolean",
-              "required": true,
-              "description": "Whether destroy_window() has marked this record destroyed.",
-              "json_clean": true
-            },
-            "needs_project": {
-              "type": "bool",
-              "logical_type": "boolean",
-              "required": true,
-              "description": "Whether project_window() should run for this window.",
-              "json_clean": true
-            },
-            "debug_label": {
-              "type": "string",
-              "semantic_type": "debug-label",
-              "required": true,
-              "description": "Human-readable debug label.",
-              "json_clean": true
-            }
-          },
-          "additional_keys": true
-        }
+      "has_had_window": {
+        "type": "bool",
+        "default": false,
+        "hook": "True once any window has existed; prevents immediate last-window shutdown before first window."
       },
-      "target-record": {
-        "title": "Target Record",
-        "description": "Queued runtime target record stored in targets.",
-        "data-dictionary": {
-          "owned_by": "app.targets[target-id]",
-          "source_module": "src/tkvillage/messages.py and src/tkvillage/windows.py",
-          "created_by": [
-            "register_service_target()",
-            "realize_window()"
-          ],
-          "cleared_by": [
-            "destroy_window() for window targets",
-            "reset_app()"
-          ],
-          "used_for": "Runtime event/message routing.",
-          "runtime_only": true
-        },
-        "structure": {
-          "type": "object",
-          "keys": {
-            "target_id": {
-              "type": "target-id",
-              "required": true,
-              "description": "Stable runtime target id.",
-              "json_clean": true
-            },
-            "target_kind": {
-              "type": "string",
-              "semantic_type": "target-kind",
-              "required": true,
-              "description": "Kind of runtime target.",
-              "constraints": {
-                "allowed_values": [
-                  "window",
-                  "service",
-                  "worker",
-                  "debug",
-                  "app"
-                ]
-              },
-              "json_clean": true
-            },
-            "inbox": {
-              "type": "array",
-              "items": [
-                "semantic-event",
-                "message-envelope"
-              ],
-              "required": true,
-              "description": "Queued events or message envelopes.",
-              "json_clean": "mostly",
-              "data-dictionary": {
-                "updated_by": [
-                  "post_event()",
-                  "send_message()",
-                  "tick_once()"
-                ],
-                "lifecycle": "For window targets this is the same list object as window-record.event_queue."
-              }
-            },
-            "handler": {
-              "type": [
-                "function-reference",
-                "null"
-              ],
-              "required": true,
-              "nullable": true,
-              "description": "Optional service handler called during tick processing.",
-              "json_clean": false,
-              "data-dictionary": {
-                "runtime_only": true,
-                "called_by": "tick_once() for service targets"
-              }
-            },
-            "state": {
-              "type": "object",
-              "required": true,
-              "description": "Target-owned state dictionary where applicable.",
-              "additional_keys": true,
-              "json_clean": "mostly"
-            },
-            "is_active": {
-              "type": "bool",
-              "logical_type": "boolean",
-              "required": true,
-              "description": "Whether the target should receive queued work.",
-              "json_clean": true
-            }
-          },
-          "additional_keys": true
-        }
-      },
-      "log-entry": {
-        "title": "Log Entry",
-        "description": "General shape used by event_log, effect_log, message_log, and runtime_log.",
-        "data-dictionary": {
-          "owned_by": "bounded runtime logs",
-          "created_by": "append_log() callers",
-          "lifecycle": "Appended during runtime and trimmed to g.max_log_entries.",
-          "runtime_only": true,
-          "export_behavior": "Included in debug snapshots; values should stay JSON-friendly where practical."
-        },
-        "structure": {
-          "type": "object",
-          "keys": {
-            "at": {
-              "type": "unix-timestamp-seconds",
-              "required": true,
-              "description": "Timestamp for the log entry.",
-              "json_clean": true
-            },
-            "target_id": {
-              "type": "target-id",
-              "required": false,
-              "description": "Optional target id associated with the entry.",
-              "json_clean": true
-            },
-            "source_id": {
-              "type": [
-                "target-id",
-                "null"
-              ],
-              "required": false,
-              "nullable": true,
-              "description": "Optional source id associated with the entry.",
-              "json_clean": true
-            },
-            "event": {
-              "type": "semantic-event",
-              "required": false,
-              "description": "Optional semantic event object.",
-              "json_clean": true
-            },
-            "effect": {
-              "type": "effect",
-              "required": false,
-              "description": "Optional effect object.",
-              "json_clean": true
-            },
-            "message": {
-              "type": [
-                "message-envelope",
-                "string",
-                "object"
-              ],
-              "required": false,
-              "description": "Optional runtime message, log text, or message envelope.",
-              "json_clean": "mostly"
-            },
-            "error": {
-              "type": "string or error summary object",
-              "required": false,
-              "description": "Optional error representation.",
-              "json_clean": "mostly"
-            },
-            "traceback": {
-              "type": "string",
-              "required": false,
-              "description": "Optional traceback text.",
-              "json_clean": true
-            }
-          },
-          "additional_keys": true
-        }
-      },
-      "worker-record": {
-        "title": "Worker Record",
-        "description": "Reserved future worker-thread record stored in worker_records.",
-        "status": "reserved",
-        "data-dictionary": {
-          "owned_by": "app.worker_records[worker-id]",
-          "source_module": "src/tkvillage/app.py",
-          "lifecycle": "Reserved; no current writer beyond reset_app() clearing the registry.",
-          "runtime_only": true,
-          "export_behavior": "Future worker thread objects should not be serialized directly."
-        },
-        "structure": {
-          "type": "object",
-          "additional_keys": true
-        }
+      "shutdown_window_kind_seen": {
+        "type": "bool",
+        "default": false,
+        "hook": "True once the watched shutdown window kind has existed."
       }
     }
+  },
+  "containers": {
+    "window_kinds": {
+      "type": "dict[str, dict]",
+      "json_clean": "Mostly; callables are present in records.",
+      "hook": "Registry of summonable window-kind declarations."
+    },
+    "windows": {
+      "type": "dict[str, dict]",
+      "json_clean": "No; records include Tk widgets.",
+      "hook": "Live Toplevel window records."
+    },
+    "windows_by_instance_key": {
+      "type": "dict[str, str]",
+      "json_clean": true,
+      "hook": "Maps multiplicity instance keys to live window ids."
+    },
+    "targets": {
+      "type": "dict[str, dict]",
+      "json_clean": "Partly; service target records include handler callables.",
+      "hook": "Message/event routing targets for windows and services."
+    },
+    "runtime_objects": {
+      "type": "dict[str, object]",
+      "json_clean": false,
+      "hook": "Reserved scratchpad for runtime-owned objects."
+    },
+    "event_log": {
+      "type": "list[dict]",
+      "json_clean": true,
+      "hook": "Bounded semantic event log."
+    },
+    "effect_log": {
+      "type": "list[dict]",
+      "json_clean": true,
+      "hook": "Bounded routed effect log."
+    },
+    "message_log": {
+      "type": "list[dict]",
+      "json_clean": true,
+      "hook": "Bounded message routing log."
+    },
+    "runtime_log": {
+      "type": "list[dict]",
+      "json_clean": true,
+      "hook": "Bounded runtime lifecycle log."
+    },
+    "worker_records": {
+      "type": "dict[str, dict]",
+      "json_clean": "Reserved",
+      "hook": "Reserved for future worker bookkeeping."
+    },
+    "debug": {
+      "type": "dict",
+      "json_clean": true,
+      "hook": "Debug mode and last JSON-friendly snapshot."
+    },
+    "id_counters": {
+      "type": "dict[str, int]",
+      "json_clean": true,
+      "hook": "Counters used by next_id(prefix)."
+    }
+  },
+  "ready_contract": {
+    "declare_app": "Records mode and path intent. Standalone requires project-dir or project-dir-name. lionscliapp mode does not require project-dir-name and does not create folders during declaration.",
+    "ensure_ready": "Creates and records the actual TkVillage directory. In lionscliapp mode, call after lionscliapp has entered command/runtime execution.",
+    "run": "Calls ensure_ready() before ensuring the Tk root and starting the mainloop."
   }
 }

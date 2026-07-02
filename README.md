@@ -3,7 +3,8 @@
 TkVillage is a small importable Python/Tkinter runtime for Lion-style modular GUI
 applications. It owns a hidden Tk root, summonable `Toplevel` windows, reducer
 state dictionaries, queued semantic events, a periodic tick loop, simple message
-routing, config persistence, testing helpers, and debug snapshots.
+routing, testing helpers, and debug snapshots. Application configuration belongs
+to the host app, usually lionscliapp.
 
 The first runnable example is:
 

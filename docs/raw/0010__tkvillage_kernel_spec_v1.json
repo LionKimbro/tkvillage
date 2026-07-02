@@ -13,7 +13,7 @@
       "llm-coding",
       "lionkimbro"
     ],
-    "purpose": "Specify the minimum viable TkVillage kernel: an importable Python package that provides a lightweight host framework for modular tkinter applications using summonable Toplevel windows, reducer-style event queues, runtime ticking, inter-window messaging, configuration, lifecycle hooks, testing support, and debug introspection.",
+    "purpose": "Specify the minimum viable TkVillage kernel: an importable Python package that provides a lightweight host framework for modular tkinter applications using summonable Toplevel windows, reducer-style event queues, runtime ticking, inter-window messaging, lifecycle hooks, testing support, and debug introspection.",
     "author": [
       "Lion Kimbro",
       "Wing-Cat (ChatGPT)"
@@ -29,7 +29,7 @@
     ]
   },
   "orientation": {
-    "summary": "TkVillage is a lightweight host framework for modular tkinter applications. It is not a complete GUI framework, visual builder, plugin platform, game engine, or full CIRA implementation. TkVillage v1 should provide the host organism: the shared runtime context, hidden Tk root, Toplevel window lifecycle, window kind registry, summon system, routine tick loop, reducer-oriented event queues, message bus, project-local storage, configuration system, testing gateway, and generic debug/introspection tools.",
+    "summary": "TkVillage is a lightweight host framework for modular tkinter applications. It is not a complete GUI framework, visual builder, plugin platform, game engine, or full CIRA implementation. TkVillage v1 should provide the host organism: the shared runtime context, hidden Tk root, Toplevel window lifecycle, window kind registry, summon system, routine tick loop, reducer-oriented event queues, message bus, project-local runtime storage, testing gateway, and generic debug/introspection tools.",
     "one-sentence-target": "Build the minimum viable TkVillage kernel that lets Lion-style tkinter programs register window kinds, summon windows, run a periodic runtime loop, process queued events through reducers, route messages, inspect live state, and remain friendly to LLM-assisted development.",
     "design-center": "Small procedural Python, explicit dictionaries, inspectable state, predictable runtime behavior, and reusable conventions rather than heavy abstractions."
   },
@@ -57,8 +57,8 @@
       "app-object": "A central runtime object or global application dictionary that owns shared TkVillage state.",
       "hidden-root": "A single hidden Tk root used as the tkinter runtime anchor.",
       "project-directory": "A project-local data directory such as .tkvillage or an app-specific .foo directory.",
-      "configuration-system": "A small named configuration system with typed values and basic persistence.",
-      "cli-interface": "A minimal CLI for launching the app, inspecting config, setting config, and running tests.",
+      "configuration-system": "Do not build a TkVillage app configuration subsystem. Use lionscliapp or the host app for application configuration.",
+      "cli-interface": "A minimal CLI for launching the app and printing debug snapshots.",
       "window-kind-registry": "A registry of window kinds and their multiplicity/lifecycle rules.",
       "live-window-registry": "A registry of currently realized Toplevel windows and their runtime records.",
       "summon-system": "A standard summon_window operation that creates, focuses, or reuses windows according to policy.",
@@ -84,7 +84,7 @@
   },
   "terminology": {
     "app": {
-      "definition": "The central TkVillage runtime context. It owns root, registries, queues, configuration, project paths, debug state, and runtime services."
+      "definition": "The central TkVillage runtime context. It owns root, registries, queues, project paths, debug state, and runtime services."
     },
     "root": {
       "definition": "The hidden tkinter.Tk object that anchors the tkinter interpreter and event loop. It should normally be withdrawn."
@@ -141,11 +141,8 @@
       "tkvillage/root.py": {
         "purpose": "Create and manage the hidden Tk root."
       },
-      "tkvillage/config.py": {
-        "purpose": "Define configuration declarations, loading, saving, getting, and setting."
-      },
       "tkvillage/project_dir.py": {
-        "purpose": "Resolve and create project-local storage directories."
+        "purpose": "Resolve and create TkVillage runtime storage directories, including lionscliapp-hosted <project>/tkvillage."
       },
       "tkvillage/windows.py": {
         "purpose": "Window kind registry, live window registry, summon/realize/raise/close/destroy operations."
@@ -172,13 +169,13 @@
         "purpose": "Testing gateway for running app tests inside the tkinter mainloop."
       },
       "tkvillage/cli.py": {
-        "purpose": "Command-line entrypoints for config, testing, and app launch."
+        "purpose": "Small command-line entrypoints for app launch and debug snapshot."
       },
       "examples/minimal_app.py": {
         "purpose": "A tiny working example that demonstrates a singleton main window, reducer event queue, tick loop, and debug mode."
       },
       "tests/test_core.py": {
-        "purpose": "Basic unit and integration tests for registries, summon policies, config, and event processing."
+        "purpose": "Basic unit and integration tests for registries, summon policies, readiness, and event processing."
       }
     }
   },
@@ -188,7 +185,6 @@
     "required-fields": {
       "root": "The hidden tkinter.Tk object.",
       "project_dir": "Resolved project-local data directory.",
-      "config": "Configuration values and config declarations.",
       "window_kinds": "Registry of window kind records.",
       "windows": "Registry of live window records by window_id.",
       "windows_by_instance_key": "Lookup from instance_key to live window_id.",
@@ -208,7 +204,7 @@
   },
   "global-runtime-data-policy": {
     "name": "TkVillage uses globally accessible runtime data.",
-    "description": "TkVillage v1 assumes a single active application runtime per Python process. Runtime state should be held in simple module-level globals, such as window_kinds, windows, windows_by_instance_key, targets, runtime_objects, event_log, effect_log, message_log, worker_records, debug, root, config, tick_count, and tick_interval_ms. Public runtime functions such as post_event, send_message, summon_window, raise_window, close_window, and destroy_window should not require an app argument. They may access the module-level runtime data directly through the TkVillage runtime module.",
+    "description": "TkVillage v1 assumes a single active application runtime per Python process. Runtime state should be held in simple module-level globals, such as g, window_kinds, windows, windows_by_instance_key, targets, runtime_objects, event_log, effect_log, message_log, worker_records, debug, tick_count, and tick_interval_ms. Public runtime functions such as post_event, send_message, summon_window, raise_window, close_window, and destroy_window should not require an app argument. They may access the module-level runtime data directly through the TkVillage runtime module.",
     "correction": "Do not implement TkVillage as one large nested app dictionary unless explicitly requested. The phrase 'global app data' means runtime data is globally accessible, not that all runtime data must be nested under app[...]."
   },
   "root-window-policy": {
@@ -222,22 +218,10 @@
     }
   },
   "configuration-system": {
-    "summary": "TkVillage should provide a small typed configuration system suitable for project-local apps and CLI inspection.",
+    "summary": "Removed. TkVillage does not provide a typed configuration system.",
     "requirements": {
-      "declare-config": "Allow applications to declare named configuration parameters.",
-      "typed-values": "Support simple types such as string, int, float, bool, path, and choice.",
-      "default-values": "Support default values.",
-      "get-set": "Support get_config and set_config operations.",
-      "persistence": "Persist configuration in the project directory as JSON.",
-      "cli-inspection": "Allow the CLI to list, inspect, and set configuration values.",
-      "json-friendly": "Keep config declarations and values JSON-friendly."
-    },
-    "suggested-config-record-shape": {
-      "name": "<config-name>",
-      "type": "string | int | float | bool | path | choice",
-      "default": "<default-value>",
-      "description": "<human-readable description>",
-      "choices": "<optional array of allowed values for choice type>"
+      "host-boundary": "Use lionscliapp or the host app for application configuration.",
+      "tkvillage-files": "TkVillage may keep runtime-specific files under its own project_dir."
     }
   },
   "project-directory": {
@@ -245,12 +229,12 @@
     "requirements": {
       "default-name": "Default to .tkvillage unless the app declares another project directory name.",
       "create-if-missing": "Create the project directory when needed.",
-      "config-location": "Store config JSON in the project directory.",
+      "config-location": "No TkVillage config JSON is stored here.",
       "logs-location": "Store optional debug logs or runtime artifacts in the project directory.",
       "test-mode": "Allow test mode to use a temporary or test-specific project directory."
     },
     "example-layout": {
-      ".tkvillage/config.json": "Persisted configuration values.",
+      ".tkvillage/": "TkVillage-specific runtime files.",
       ".tkvillage/logs/": "Optional logs.",
       ".tkvillage/debug-snapshots/": "Optional saved debug snapshots.",
       ".tkvillage/tmp/": "Optional temporary runtime artifacts."
@@ -327,7 +311,7 @@
   },
   "clean-data-vs-runtime-objects": {
     "name": "Keep data dictionaries JSON-clean; isolate Python objects behind string-keyed runtime registries.",
-    "description": "TkVillage should keep semantic data dictionaries JSON-serializable wherever practical. Reducer state, configuration values, events, effects, debug snapshots, and persisted records should contain ordinary JSON-compatible data rather than direct references to Python objects. When runtime Python objects are needed, such as tkinter widgets, Toplevels, queues, threads, functions, or file handles, they should be stored in explicit runtime registries or dictionaries keyed by stable strings. Semantic state may store those stable string keys, but not the Python objects themselves."
+    "description": "TkVillage should keep semantic data dictionaries JSON-serializable wherever practical. Reducer state, events, effects, debug snapshots, and persisted records should contain ordinary JSON-compatible data rather than direct references to Python objects. When runtime Python objects are needed, such as tkinter widgets, Toplevels, queues, threads, functions, or file handles, they should be stored in explicit runtime registries or dictionaries keyed by stable strings. Semantic state may store those stable string keys, but not the Python objects themselves."
   },
   "summon-system": {
     "summary": "TkVillage should provide a standard summon_window operation. Callers should not need to know whether a window already exists.",
@@ -580,9 +564,6 @@
     "summary": "TkVillage should include a minimal CLI. It may be small in v1.",
     "commands": {
       "run": "Launch an application if an app entrypoint is provided.",
-      "config-list": "List configuration values.",
-      "config-get": "Get a configuration value.",
-      "config-set": "Set a configuration value.",
       "test": "Run tests or launch app in test mode.",
       "debug-snapshot": "Optional command to print or save a debug snapshot if app integration supports it."
     },
@@ -609,7 +590,7 @@
       "dictionary-friendly": "Use dictionaries for records where practical and readable.",
       "classes-allowed-but-not-required": "Classes may be used for the app object or simple containers, but avoid deep inheritance.",
       "explicit-registries": "Make registries explicit and inspectable.",
-      "json-friendly-boundaries": "Keep state, config, events, effects, and debug snapshots JSON-friendly where practical.",
+      "json-friendly-boundaries": "Keep state, events, effects, and debug snapshots JSON-friendly where practical.",
       "runtime-only-objects-stay-in-runtime": "Tkinter widgets, queues, threads, and function references may live in runtime records but not reducer-owned semantic state.",
       "llm-readable": "Write code so an LLM can quickly locate window registration, state shape, reducer branches, effects, and projection."
     }
@@ -636,7 +617,7 @@
     "debug-state-editor": "Allow controlled editing or event injection from the debug inspector.",
     "log-export": "Export event/effect/message logs for AI-assisted debugging.",
     "package-generators": "Generate skeleton window modules from registered contracts.",
-    "typed-config-ui": "Generate config editor UI from config declarations."
+    "host-config-bridges": "Use host configuration services, especially lionscliapp, when a TkVillage app needs configuration."
   },
   "codex-instructions": {
     "implementation-order": {

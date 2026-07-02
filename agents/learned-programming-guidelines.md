@@ -29,12 +29,12 @@ village.register_window_kind({
     "project": project,
 })
 
-village.declare_config({
-    "name": "theme",
-    "default": "light",
-    "type": "choice",
-    "description": "UI theme",
-    "choices": ["light", "dark"],
+village.declare_app({
+    "name": "my-app",
+    "lionscliapp": True,
+    "shutdown-policy": "explicit",
+    "shutdown-window-kind": None,
+    "on-shutdown": None,
 })
 ```
 
@@ -44,8 +44,13 @@ Avoid:
 
 ```python
 village.register_window_kind("main", title="Main", multiplicity="singleton", create=create)
-village.declare_config("theme", "light", "choice", "UI theme", ["light", "dark"])
 ```
+
+## Configuration Belongs to the Host App
+
+TkVillage does not own a configuration subsystem. In the common lionscliapp case, application configuration belongs to lionscliapp. TkVillage may keep its own runtime-specific files under `<lionscliapp-project>/tkvillage`, but it should not grow a parallel app-config framework.
+
+When `declare_app({"lionscliapp": True, ...})` is used, do not resolve or create project folders during declaration. Call `village.ensure_ready()` at command/runtime entry instead.
 
 ## Use Kebab-Case Keys for User-Facing Declarations
 

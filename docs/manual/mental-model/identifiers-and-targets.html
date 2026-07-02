@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Identifiers and Targets - TkVillage</title><link rel="stylesheet" href="../assets/manual.css"></head>
+<body><div class="shell"><aside class="sidebar"><a class="brand" href="../index.html"><strong>TkVillage</strong><span>Human manual</span></a><nav><div class="nav-group"><h2>Start</h2><a href="../index.html">Home</a><a href="../tutorial/index.html">Tutorial</a><a href="../tutorial/quick-start.html">Quick Start</a><a href="../tutorial/lionscliapp-setup.html">lionscliapp Setup</a></div><div class="nav-group"><h2>Mental Model</h2><a href="overview.html">Overview</a><a href="window-kinds.html">Window Kinds</a><a href="windows.html">Windows</a><a href="identifiers-and-targets.html">Identifiers and Targets</a><a href="events-effects.html">Events and Effects</a><a href="tick-loop.html">Tick Loop</a><a href="runtime-state.html">Runtime State</a><a href="shutdown.html">Shutdown</a></div><div class="nav-group"><h2>Functions</h2><a href="../functions/all-functions.html">All Functions</a><a href="../functions/window-kind-functions.html">Window-Kind Functions</a><a href="../functions/windows-functions.html">Window Functions</a><a href="../functions/events-messages-functions.html">Events and Messages</a><a href="../functions/hosting-functions.html">Hosting Functions</a><a href="../functions/runtime-functions.html">Runtime Functions</a><a href="../functions/effects-ticks-debug-functions.html">Effects, Ticks, Debug</a></div><div class="nav-group"><h2>Reference</h2><a href="../glossary.html">Glossary</a></div></nav></aside><main class="content">
+<section class="hero"><h1>Identifiers and Targets</h1><p>TkVillage uses small string ids to connect declarations, live windows, reusable instances, and routing targets.</p></section>
+
+<h2>The Identifier Family</h2>
+<table>
+  <tr><th>Name</th><th>Looks Like</th><th>Meaning</th></tr>
+  <tr><td><code>window_kind</code></td><td><code>main</code>, <code>asset-browser</code></td><td>An app-chosen registered kind of window. It names a recipe, not a live window.</td></tr>
+  <tr><td><code>window_id</code></td><td><code>window-1</code>, <code>window-2</code></td><td>A TkVillage-generated id for one live Toplevel window.</td></tr>
+  <tr><td><code>instance_key</code></td><td><code>main:singleton</code>, <code>editor:abc</code></td><td>A reuse key derived from the window kind and summon policy.</td></tr>
+  <tr><td><code>key</code></td><td><code>abc</code>, <code>C:/notes/today.md</code></td><td>An app-supplied identity used when summoning a per-key window.</td></tr>
+  <tr><td><code>target_id</code></td><td><code>window-1</code>, <code>autosave</code></td><td>A routing address for events and messages.</td></tr>
+</table>
+
+<h2>Window Ids</h2>
+<p>You do not pick a <code>window_id</code>. TkVillage generates it when it realizes a window. Current ids are generated from the <code>window</code> prefix, so they look like <code>window-1</code>, <code>window-2</code>, and so on.</p>
+<p><code>summon_window()</code> returns the live window record, whether it created a new window or reused an existing singleton/per-key window.</p>
+<pre><code>record = village.summon_window("main")
+window_id = record["window_id"]</code></pre>
+
+<h2>Window Targets</h2>
+<p>Every live window is also a target. For a window, the target id is the same string as its window id.</p>
+<pre><code>record = village.summon_window("main")
+assert record["target_id"] == record["window_id"]
+
+village.post_event(record["window_id"], {"type": "REFRESH"})</code></pre>
+<p>The helper functions let you avoid thinking about target ids when a more specific route is clearer.</p>
+<ul>
+  <li><code>post_event_to_window(window_id, event)</code> posts directly to one live window.</li>
+  <li><code>post_event_to_instance(instance_key, event)</code> resolves an instance key to a live window.</li>
+  <li><code>post_event_to_kind(window_kind, event)</code> targets a singleton window kind.</li>
+</ul>
+
+<h2>Service Targets</h2>
+<p>For service targets, you choose the <code>target_id</code> when you register the service. Pick a stable, descriptive, unique string inside your app.</p>
+<pre><code>village.register_service_target("autosave", handle_autosave, {})
+village.send_message("autosave", {"path": "notes.json"})</code></pre>
+<p>Typical service target ids look like <code>autosave</code>, <code>filetalk-inbox</code>, <code>worker-status</code>, <code>app-coordinator</code>, or <code>debug-log</code>. TkVillage does not impose a namespace beyond requiring the id to be the key under which the target is registered.</p>
+
+<h2>Instance Keys</h2>
+<p>Instance keys are how TkVillage knows when a summon should reuse a live window.</p>
+<table>
+  <tr><th>Multiplicity</th><th>Instance Key Shape</th><th>Reuse Rule</th></tr>
+  <tr><td><code>singleton</code></td><td><code>&lt;window-kind&gt;:singleton</code></td><td>One live window for the whole kind.</td></tr>
+  <tr><td><code>per-key</code></td><td><code>&lt;window-kind&gt;:&lt;key&gt;</code></td><td>One live window for each app-supplied key.</td></tr>
+  <tr><td><code>free-instance</code></td><td><code>&lt;window-kind&gt;:instance-1</code></td><td>Each summon creates a new live window.</td></tr>
+</table>
+
+<div class="callout">If you are unsure which id to use for routing to a window, start with the record returned by <code>summon_window()</code>. Its <code>window_id</code> is the window's routing address.</div>
+</main></div><script src="../assets/nav.js"></script></body></html>

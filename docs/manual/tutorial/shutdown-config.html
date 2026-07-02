@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Shutdown and Config - TkVillage</title>
+  <title>Shutdown and Hosting - TkVillage</title>
   <link rel="stylesheet" href="../assets/manual.css">
 </head>
 <body>
@@ -11,15 +11,15 @@
     <aside class="sidebar">
       <a class="brand" href="../index.html"><strong>TkVillage</strong><span>Human manual</span></a>
       <nav>
-        <div class="nav-group"><h2>Start</h2><a href="../index.html">Home</a><a href="index.html">Tutorial</a><a href="quick-start.html">Quick Start</a><a href="counter-window.html">Counter Window</a><a href="shutdown-config.html">Shutdown and Config</a><a href="testing-debugging.html">Testing and Debugging</a></div>
-        <div class="nav-group"><h2>Mental Model</h2><a href="../mental-model/overview.html">Overview</a><a href="../mental-model/window-kinds.html">Window Kinds</a><a href="../mental-model/windows.html">Windows</a><a href="../mental-model/events-effects.html">Events and Effects</a><a href="../mental-model/tick-loop.html">Tick Loop</a><a href="../mental-model/runtime-state.html">Runtime State</a><a href="../mental-model/shutdown.html">Shutdown</a></div>
-        <div class="nav-group"><h2>Functions</h2><a href="../functions/all-functions.html">All Functions</a><a href="../functions/window-kind-functions.html">Window-Kind Functions</a><a href="../functions/windows-functions.html">Window Functions</a><a href="../functions/events-messages-functions.html">Events and Messages</a><a href="../functions/config-functions.html">Config Functions</a><a href="../functions/runtime-functions.html">Runtime Functions</a><a href="../functions/effects-ticks-debug-functions.html">Effects, Ticks, Debug</a></div>
+        <div class="nav-group"><h2>Start</h2><a href="../index.html">Home</a><a href="index.html">Tutorial</a><a href="quick-start.html">Quick Start</a><a href="lionscliapp-setup.html">lionscliapp Setup</a><a href="counter-window.html">Counter Window</a><a href="shutdown-config.html">Shutdown and Hosting</a><a href="testing-debugging.html">Testing and Debugging</a></div>
+        <div class="nav-group"><h2>Mental Model</h2><a href="../mental-model/overview.html">Overview</a><a href="../mental-model/window-kinds.html">Window Kinds</a><a href="../mental-model/windows.html">Windows</a><a href="../mental-model/identifiers-and-targets.html">Identifiers and Targets</a><a href="../mental-model/events-effects.html">Events and Effects</a><a href="../mental-model/tick-loop.html">Tick Loop</a><a href="../mental-model/runtime-state.html">Runtime State</a><a href="../mental-model/shutdown.html">Shutdown</a></div>
+        <div class="nav-group"><h2>Functions</h2><a href="../functions/all-functions.html">All Functions</a><a href="../functions/window-kind-functions.html">Window-Kind Functions</a><a href="../functions/windows-functions.html">Window Functions</a><a href="../functions/events-messages-functions.html">Events and Messages</a><a href="../functions/hosting-functions.html">Hosting Functions</a><a href="../functions/runtime-functions.html">Runtime Functions</a><a href="../functions/effects-ticks-debug-functions.html">Effects, Ticks, Debug</a></div>
       </nav>
     </aside>
     <main class="content">
       <section class="hero">
-        <h1>Shutdown and Config</h1>
-        <p>TkVillage makes application exit policy explicit and keeps simple configuration in the project directory.</p>
+        <h1>Shutdown and Hosting</h1>
+        <p>TkVillage makes application exit policy explicit and keeps its own runtime files in a small project directory.</p>
       </section>
       <h2>Shutdown Policy</h2>
       <table>
@@ -40,17 +40,27 @@ village.declare_app({
 })
 
 village.request_shutdown("user requested exit")</code></pre>
-      <h2>Configuration</h2>
-      <p>Config declarations describe type and intent. Values are saved to <code>config.json</code> under <code>rt.g["project_dir"]</code>.</p>
-      <pre><code>village.declare_config({
-    "name": "theme",
-    "default": "light",
-    "type": "choice",
-    "description": "UI theme",
-    "choices": ["light", "dark"],
+      <h2>Hosting</h2>
+      <p>Most TkVillage apps are expected to run inside lionscliapp. In that mode, declaration does not create files because lionscliapp resolves the real project directory later, inside command runtime.</p>
+      <pre><code>village.declare_app({
+    "name": "my-app",
+    "lionscliapp": True,
+    "shutdown-policy": "explicit",
+    "shutdown-window-kind": None,
+    "on-shutdown": cleanup,
 })
-village.set_config("theme", "dark")
-theme = village.get_config("theme")</code></pre>
+
+def my_command():
+    village.ensure_ready()
+    village.run()</code></pre>
+      <p>Standalone mode remains available for smaller scripts. Provide <code>project-dir-name</code> or <code>project-dir</code>; <code>ensure_ready()</code> creates that directory when the runtime enters use.</p>
+      <pre><code>village.declare_app({
+    "name": "small-tool",
+    "project-dir-name": ".small-tool",
+    "shutdown-policy": "on-last-window-close",
+    "shutdown-window-kind": None,
+    "on-shutdown": None,
+})</code></pre>
     </main>
   </div>
   <script src="../assets/nav.js"></script>

@@ -1,779 +1,211 @@
 {
   "document": {
-    "document-id": "tkvillage.system-api-reference.v1",
+    "id": "tkvillage.system-api-reference.v2",
     "title": "TkVillage System API Reference",
-    "tags": [
-      "tkvillage",
-      "apireference",
-      "python",
-      "tkinter",
-      "runtime",
-      "llmcoding"
-    ],
-    "purpose": "Provide a full user-facing API reference for the current TkVillage kernel.",
-    "author": [
-      "Codex"
-    ],
-    "status": "initial",
-    "created": "2026-06-29",
-    "type": {
-      "logical": {
-        "base": "file",
-        "format": "json",
-        "encoding": "utf-8"
-      },
-      "semantic": {
-        "base": "reference"
-      }
+    "audience": {
+      "primary": "LLMs and coding agents",
+      "secondary": "human readers"
     }
   },
-  "orientation": {
-    "primary-audience": "LLM coding agents that need exact callable contracts while editing TkVillage applications.",
-    "secondary-audience": "Human Python programmers using the TkVillage package.",
-    "import-pattern": "import tkvillage as village",
-    "runtime-import-pattern": "import tkvillage.app as rt",
-    "public-api-source": "src/tkvillage/__init__.py",
-    "notes": [
-      "This reference documents the current implementation, not planned future behavior.",
-      "Functions are procedural; no public classes are required.",
-      "The runtime assumes one active TkVillage application per Python process."
-    ]
-  },
-  "public-api": {
-    "runtime": [
-      "declare_app",
-      "create_app",
-      "request_shutdown",
-      "reset_app",
-      "run",
-      "shutdown",
-      "rt"
-    ],
-    "configuration": [
-      "declare_config",
-      "load_config",
-      "save_config",
-      "get_config",
-      "set_config",
-      "list_config"
-    ],
-    "windows": [
-      "register_window_kind",
-      "summon_window",
-      "raise_window",
-      "close_window",
-      "destroy_window",
-      "get_window",
-      "list_windows"
-    ],
-    "events": [
-      "post_event",
-      "post_event_to_window",
-      "post_event_to_instance",
-      "post_event_to_kind",
-      "broadcast_event"
-    ],
-    "messages": [
-      "register_service_target",
-      "send_message",
-      "send_message_to_window",
-      "send_message_to_instance",
-      "send_message_to_kind",
-      "broadcast_message"
-    ],
-    "effects": [
-      "route_effect",
-      "route_effects"
-    ],
-    "ticks": [
-      "tick_once",
-      "run_ticks",
-      "start_tick_loop",
-      "stop_tick_loop"
-    ],
-    "debug": [
-      "toggle_debug",
-      "get_debug_snapshot",
-      "copy_debug_snapshot"
-    ]
-  },
-  "runtime-state-api": {
-    "rt": {
-      "module": "tkvillage.app",
-      "description": "Runtime module re-exported as tkvillage.rt. Use this for inspection and advanced integration.",
-      "scalar-state": "rt.g",
-      "containers": [
-        "rt.config_declarations",
-        "rt.config_values",
-        "rt.window_kinds",
-        "rt.windows",
-        "rt.windows_by_instance_key",
-        "rt.targets",
-        "rt.runtime_objects",
-        "rt.event_log",
-        "rt.effect_log",
-        "rt.message_log",
-        "rt.runtime_log",
-        "rt.worker_records",
-        "rt.debug",
-        "rt.id_counters"
-      ],
-      "caution": "Do not reassign runtime containers. reset_app() preserves their identities."
-    },
-    "rt.g": {
-      "type": "dict",
-      "keys": {
-        "name": "application name string",
-        "root": "tkinter.Tk or null",
-        "project_dir": "pathlib.Path or null",
-        "is_running": "bool",
-        "test_mode": "bool",
-        "strict_effects": "bool",
-        "tick_interval_ms": "int",
-        "tick_after_id": "Tk after id or null",
-        "tick_count": "int",
-        "created_at": "float unix timestamp seconds",
-        "max_log_entries": "int",
-        "shutdown_policy": "explicit | on-last-window-close | on-window-close | null",
-        "shutdown_window_kind": "window kind string or null",
-        "shutdown_requested": "bool",
-        "shutdown_reason": "optional reason supplied to request_shutdown()",
-        "is_shutting_down": "bool",
-        "shutdown_handler": "callable or null",
-        "shutdown_handler_called": "bool",
-        "has_had_window": "bool",
-        "shutdown_window_kind_seen": "bool"
-      }
-    }
-  },
+  "module": "tkvillage",
+  "boundary": "TkVillage has no public config subsystem. Use lionscliapp or host-app facilities for application configuration.",
   "functions": {
     "declare_app": {
-      "module": "tkvillage.app",
       "signature": "declare_app(spec)",
-      "description": "Preferred application declaration and runtime initialization API. Accepts one dictionary so application identity, project directory, test/root options, and shutdown policy are visible in one place.",
+      "authority": "Runtime declaration.",
       "parameters": {
-        "spec": "Application declaration dictionary using kebab-case keys."
+        "spec": "Application declaration dictionary."
       },
-      "required-spec-keys": {
-        "name": "Application/runtime name stored in rt.g[\"name\"].",
-        "project-dir-name": "Project-local runtime directory name.",
-        "shutdown-policy": "One of explicit, on-last-window-close, or on-window-close."
+      "spec": {
+        "name": "str. Required runtime/application name.",
+        "shutdown-policy": "\"explicit\" | \"on-last-window-close\" | \"on-window-close\". Required.",
+        "project-dir-name": "str. Standalone directory name. Required unless project-dir is supplied or lionscliapp is true.",
+        "project-dir": "str | pathlib.Path. Optional explicit standalone project directory.",
+        "project-root": "str | pathlib.Path | None. Optional parent for project-dir-name.",
+        "lionscliapp": "bool. Optional. When true, defer project path readiness to ensure_ready().",
+        "tick-interval-ms": "int | str. Optional; default 50.",
+        "test-mode": "bool. Optional.",
+        "create-root": "bool. Optional; defaults to false in lionscliapp mode, true otherwise.",
+        "shutdown-window-kind": "str | None. Required for on-window-close.",
+        "on-shutdown": "callable | None. Optional one function called once when shutdown begins."
       },
-      "optional-spec-keys": {
-        "project-root": "Directory under which project-dir-name is resolved. Defaults to current working directory.",
-        "tick-interval-ms": "Tick loop interval in milliseconds. Defaults to 50.",
-        "test-mode": "When true, tick_once() re-raises exceptions after logging them.",
-        "create-root": "When false, do not create Tk root during declaration.",
-        "shutdown-window-kind": "Required when shutdown-policy is on-window-close.",
-        "on-shutdown": "Optional no-argument callable invoked once when graceful or hard shutdown begins."
-      },
-      "returns": "rt.g dictionary.",
-      "side-effects": [
-        "Calls reset_app().",
-        "Resolves and creates rt.g[\"project_dir\"].",
-        "Creates hidden Tk root unless create-root is false.",
-        "Loads config from config.json.",
+      "returns": "rt.g",
+      "notes": [
+        "Does not create project folders in lionscliapp mode.",
         "Registers debug windows.",
-        "Installs Ctrl+Shift+D debug shortcut when a root exists."
-      ],
-      "raises": [
-        "ValueError when required keys are absent.",
-        "ValueError for unknown shutdown-policy.",
-        "ValueError when shutdown-policy is on-window-close and shutdown-window-kind is absent.",
-        "ValueError when on-shutdown is not callable or None.",
-        "Tkinter/Tcl exceptions when create-root is true and Tk is unavailable or broken."
-      ],
-      "example": "village.declare_app({\"name\": \"my-app\", \"project-dir-name\": \".my-app\", \"shutdown-policy\": \"on-last-window-close\", \"shutdown-window-kind\": None, \"on-shutdown\": None})"
+        "create_app() is deprecated; new code should use declare_app()."
+      ]
     },
-    "create_app": {
-      "module": "tkvillage.app",
-      "signature": "create_app(name=\"tkvillage\", project_dir_name=\".tkvillage\", project_root=None, tick_interval_ms=50, test_mode=False, create_root=True)",
-      "description": "Deprecated compatibility wrapper around declare_app(). New code should use declare_app(spec).",
-      "deprecation": {
-        "status": "deprecated",
-        "replacement": "declare_app(spec)",
-        "behavior": "Emits DeprecationWarning and calls declare_app() with shutdown-policy explicit and no shutdown handler."
-      },
-      "parameters": {
-        "name": "Application/runtime name stored in rt.g[\"name\"].",
-        "project_dir_name": "Project-local runtime directory name.",
-        "project_root": "Directory under which project_dir_name is resolved. Defaults to current working directory.",
-        "tick_interval_ms": "Tick loop interval in milliseconds.",
-        "test_mode": "When true, tick_once() re-raises exceptions after logging them.",
-        "create_root": "When true, create and withdraw the Tk root immediately."
-      },
-      "returns": "rt.g dictionary.",
-      "side-effects": [
-        "Emits DeprecationWarning.",
-        "Delegates to declare_app()."
-      ],
-      "raises": [
-        "Tkinter/Tcl exceptions when create_root is true and Tk is unavailable or broken."
-      ],
-      "example": "village.declare_app({\"name\": \"my-app\", \"project-dir-name\": \".my-app\", \"shutdown-policy\": \"explicit\", \"shutdown-window-kind\": None, \"on-shutdown\": None})"
-    },
-    "request_shutdown": {
-      "module": "tkvillage.app",
-      "signature": "request_shutdown(reason=None)",
-      "description": "Request graceful shutdown under the explicit shutdown policy. The actual shutdown begins at the end of a later tick when maybe_begin_shutdown() evaluates policy conditions.",
-      "parameters": {
-        "reason": "Optional value stored in rt.g[\"shutdown_reason\"] and written to runtime_log."
-      },
-      "returns": "None",
-      "side-effects": [
-        "Sets rt.g[\"shutdown_requested\"] true.",
-        "Stores reason in rt.g[\"shutdown_reason\"].",
-        "Appends a shutdown requested entry to rt.runtime_log."
+    "ensure_ready": {
+      "signature": "ensure_ready()",
+      "authority": "Runtime/project-directory readiness.",
+      "returns": "rt.g",
+      "behavior": [
+        "If already ready, returns rt.g.",
+        "In lionscliapp mode, imports lionscliapp.paths.get_project_root(), creates <project-root>/tkvillage, and stores host_project_dir and project_dir.",
+        "In standalone mode, creates rt.g[\"project_dir\"]."
       ],
       "notes": [
-        "For on-last-window-close and on-window-close policies, callers usually do not need request_shutdown().",
-        "request_shutdown() does not immediately stop the mainloop; shutdown is coordinated at tick end."
+        "Call at the top of lionscliapp commands that use TkVillage.",
+        "run() calls ensure_ready() automatically."
+      ]
+    },
+    "create_app": {
+      "signature": "create_app(name=\"tkvillage\", project_dir_name=\".tkvillage\", project_root=None, tick_interval_ms=50, test_mode=False, create_root=True)",
+      "authority": "Deprecated compatibility declaration.",
+      "returns": "rt.g",
+      "notes": [
+        "Emits DeprecationWarning.",
+        "Delegates to declare_app() with explicit shutdown policy."
       ]
     },
     "reset_app": {
-      "module": "tkvillage.app",
       "signature": "reset_app()",
-      "description": "Reset all runtime state to defaults while preserving dict/list identities.",
-      "returns": "rt.g dictionary.",
-      "side-effects": [
-        "Destroys existing root if present.",
-        "Clears and repopulates rt.g.",
-        "Clears runtime registries, logs, debug state, and id counters."
-      ],
-      "example": "village.reset_app()"
+      "authority": "Runtime reset.",
+      "returns": "rt.g",
+      "notes": [
+        "Preserves dictionary/list identities.",
+        "Destroys an existing root if possible."
+      ]
     },
     "run": {
-      "module": "tkvillage.app",
       "signature": "run()",
-      "description": "Ensure the hidden root exists, start the tick loop, and enter tkinter mainloop.",
-      "returns": "None after mainloop exits.",
-      "side-effects": [
-        "May create Tk root.",
-        "Schedules periodic tick callbacks.",
-        "Blocks in tkinter mainloop."
-      ],
-      "example": "village.run()"
+      "authority": "Tk mainloop.",
+      "behavior": "Calls ensure_ready(), ensures the hidden root, starts the tick loop, and enters tkinter.mainloop()."
     },
-    "shutdown": {
-      "module": "tkvillage.app",
-      "signature": "shutdown()",
-      "description": "Stop ticking, destroy live windows, destroy root, and mark runtime not running.",
-      "returns": "None",
-      "side-effects": [
-        "Marks rt.g[\"is_shutting_down\"] true.",
-        "Calls the configured shutdown handler once if present and not already called.",
-        "Calls stop_tick_loop().",
-        "Destroys each live window.",
-        "Destroys root when present.",
-        "Sets rt.g[\"is_running\"] to false."
-      ]
-    },
-    "declare_config": {
-      "module": "tkvillage.config",
-      "signature": "declare_config(spec)",
-      "description": "Declare a typed configuration key from one dictionary.",
+    "request_shutdown": {
+      "signature": "request_shutdown(reason=None)",
+      "authority": "Graceful shutdown request.",
       "parameters": {
-        "spec": "Configuration declaration dictionary."
-      },
-      "spec-keys": {
-        "name": "Configuration key string. Required.",
-        "default": "Default value. Optional.",
-        "type": "One of string, int, float, bool, path, choice. Optional; defaults to string.",
-        "description": "Human-readable description. Optional.",
-        "choices": "Required list when type is choice."
-      },
-      "returns": "Config declaration record.",
-      "raises": [
-        "ValueError for unknown config type.",
-        "ValueError when type is choice and choices is empty."
-      ],
-      "side-effects": [
-        "Writes rt.config_declarations[name].",
-        "Initializes rt.config_values[name] to default if absent."
-      ],
-      "example": "village.declare_config({\"name\": \"theme\", \"default\": \"light\", \"type\": \"choice\", \"description\": \"UI theme\", \"choices\": [\"light\", \"dark\"]})"
-    },
-    "load_config": {
-      "module": "tkvillage.config",
-      "signature": "load_config()",
-      "description": "Read config.json from the project directory and apply declared type coercions.",
-      "returns": "rt.config_values.",
-      "raises": [
-        "File and JSON exceptions if config.json exists but cannot be read or parsed.",
-        "ValueError or coercion exceptions for invalid persisted values."
-      ],
-      "side-effects": [
-        "Updates rt.config_values."
-      ]
-    },
-    "save_config": {
-      "module": "tkvillage.config",
-      "signature": "save_config()",
-      "description": "Write rt.config_values to config.json in the project directory.",
-      "returns": "None",
-      "side-effects": [
-        "Creates parent directories as needed.",
-        "Writes indented JSON with sorted keys.",
-        "Serializes pathlib.Path values as strings."
-      ]
-    },
-    "get_config": {
-      "module": "tkvillage.config",
-      "signature": "get_config(name)",
-      "description": "Return the current config value for name.",
-      "parameters": {
-        "name": "Configuration key string."
-      },
-      "returns": "Typed config value.",
-      "raises": [
-        "KeyError if the key is absent."
-      ]
-    },
-    "set_config": {
-      "module": "tkvillage.config",
-      "signature": "set_config(name, value, persist=True)",
-      "description": "Set and optionally persist a config value.",
-      "parameters": {
-        "name": "Configuration key string.",
-        "value": "New value before coercion.",
-        "persist": "When true, call save_config() after setting."
-      },
-      "returns": "Coerced config value.",
-      "side-effects": [
-        "May auto-declare undeclared keys using inferred type.",
-        "Updates rt.config_values.",
-        "Writes config.json when persist is true."
-      ],
-      "raises": [
-        "ValueError or coercion exceptions for invalid values."
-      ]
-    },
-    "list_config": {
-      "module": "tkvillage.config",
-      "signature": "list_config()",
-      "description": "Return declared config rows with current values.",
-      "returns": "List of config declaration records plus a value field."
-    },
-    "register_window_kind": {
-      "module": "tkvillage.windows",
-      "signature": "register_window_kind(spec)",
-      "description": "Register a summonable Toplevel window kind from one dictionary.",
-      "parameters": {
-        "spec": "Window-kind declaration dictionary using kebab-case public keys."
-      },
-      "spec-keys": {
-        "window-kind": "Stable string identifier. Required.",
-        "title": "Window title; defaults to window-kind.",
-        "multiplicity": "singleton, per-key, or free-instance. embedded and modal are recognized but not implemented. Optional; defaults to singleton.",
-        "create": "Function create(record) that builds widgets. Optional default creates a simple label.",
-        "make-initial-state": "Function make_initial_state(key=None, payload=None) returning state dict. Optional.",
-        "reduce-event": "Function reduce_event(state, event) returning new_state, effects. Optional.",
-        "project": "Function project(record) updating widgets from state. Optional.",
-        "on-show": "Optional hook on_show(record).",
-        "on-close": "Optional hook on_close(record); return False to cancel close.",
-        "on-destroy": "Optional hook on_destroy(record).",
-        "on-tick": "Optional hook on_tick(record) returning effects or None.",
-        "debug-label": "Human-readable debug label. Optional."
-      },
-      "returns": "Window kind record.",
-      "side-effects": [
-        "Writes rt.window_kinds[window_kind]."
-      ],
-      "raises": [
-        "ValueError for unknown multiplicity.",
-        "NotImplementedError for embedded or modal multiplicity."
-      ]
-    },
-    "summon_window": {
-      "module": "tkvillage.windows",
-      "signature": "summon_window(window_kind, key=None, payload=None)",
-      "description": "Create or raise a window according to its registered multiplicity policy.",
-      "parameters": {
-        "window_kind": "Registered window kind string.",
-        "key": "Required for per-key windows; ignored for singleton; used in instance identity.",
-        "payload": "Optional payload passed to make_initial_state and stored in record."
-      },
-      "returns": "Live window record.",
-      "side-effects": [
-        "May create hidden root.",
-        "May create a Toplevel.",
-        "Updates rt.windows, rt.windows_by_instance_key, and rt.targets.",
-        "Calls create(), project(), raise_window(), and on_show hook as applicable."
-      ],
-      "raises": [
-        "KeyError if window kind is not registered.",
-        "ValueError if per-key window is summoned without key.",
-        "Tkinter exceptions if Tk cannot create a Toplevel."
-      ]
-    },
-    "raise_window": {
-      "module": "tkvillage.windows",
-      "signature": "raise_window(window_id)",
-      "description": "Best-effort deiconify, lift, and focus a live window.",
-      "returns": "Window record.",
-      "side-effects": [
-        "Updates last_shown_at.",
-        "Calls on_show hook if present."
-      ],
-      "raises": [
-        "KeyError if window_id is absent."
-      ]
-    },
-    "close_window": {
-      "module": "tkvillage.windows",
-      "signature": "close_window(window_id)",
-      "description": "Request close for a window, honoring on_close cancellation.",
-      "returns": "True when destroyed; False when on_close returns False.",
-      "side-effects": [
-        "Calls on_close hook if present.",
-        "Calls destroy_window() unless canceled."
-      ]
-    },
-    "destroy_window": {
-      "module": "tkvillage.windows",
-      "signature": "destroy_window(window_id)",
-      "description": "Destroy and unregister a live window if it exists.",
-      "returns": "None",
-      "side-effects": [
-        "Calls on_destroy hook if present.",
-        "Marks the record closed/destroyed.",
-        "Removes instance-key and target entries.",
-        "Calls Toplevel.destroy().",
-        "Removes window from rt.windows."
-      ],
-      "notes": [
-        "If the window_id is absent, this function returns without error."
-      ]
-    },
-    "get_window": {
-      "module": "tkvillage.windows",
-      "signature": "get_window(window_id)",
-      "description": "Return a live window record.",
-      "returns": "Window record.",
-      "raises": [
-        "KeyError if window_id is absent."
-      ]
-    },
-    "list_windows": {
-      "module": "tkvillage.windows",
-      "signature": "list_windows()",
-      "description": "Return live window records.",
-      "returns": "List of window records."
-    },
-    "post_event": {
-      "module": "tkvillage.events",
-      "signature": "post_event(target_id, event)",
-      "description": "Append an event to a target inbox and log it.",
-      "parameters": {
-        "target_id": "Runtime target id.",
-        "event": "Event dictionary, usually JSON-friendly."
-      },
-      "returns": "The event object.",
-      "side-effects": [
-        "Appends to target inbox.",
-        "Appends to rt.event_log."
-      ],
-      "raises": [
-        "KeyError if target_id is absent."
-      ]
-    },
-    "post_event_to_window": {
-      "module": "tkvillage.events",
-      "signature": "post_event_to_window(window_id, event)",
-      "description": "Alias for post_event(window_id, event).",
-      "returns": "The event object."
-    },
-    "post_event_to_instance": {
-      "module": "tkvillage.events",
-      "signature": "post_event_to_instance(instance_key, event)",
-      "description": "Post an event to the live window associated with an instance key.",
-      "returns": "The event object.",
-      "raises": [
-        "KeyError if instance_key is absent."
-      ]
-    },
-    "post_event_to_kind": {
-      "module": "tkvillage.events",
-      "signature": "post_event_to_kind(window_kind, event)",
-      "description": "Post an event to a singleton window kind.",
-      "returns": "The event object.",
-      "notes": [
-        "Computes instance_key as <window-kind>:singleton."
-      ]
-    },
-    "broadcast_event": {
-      "module": "tkvillage.events",
-      "signature": "broadcast_event(event)",
-      "description": "Post a shallow copy of event to every current target.",
-      "returns": "None",
-      "side-effects": [
-        "Appends to every target inbox.",
-        "Logs each posted event."
-      ]
-    },
-    "register_service_target": {
-      "module": "tkvillage.messages",
-      "signature": "register_service_target(target_id, handler, state=None)",
-      "description": "Register a non-window queued target.",
-      "parameters": {
-        "target_id": "Stable target id string.",
-        "handler": "Function handler(target, event) returning effects or None.",
-        "state": "Optional target-owned state dict."
-      },
-      "returns": "Target record.",
-      "side-effects": [
-        "Writes rt.targets[target_id]."
-      ]
-    },
-    "send_message": {
-      "module": "tkvillage.messages",
-      "signature": "send_message(target_id, message, source_id=None)",
-      "description": "Wrap a payload in a MESSAGE envelope, log it, and post it to a target.",
-      "returns": "The MESSAGE envelope.",
-      "side-effects": [
-        "Appends to rt.message_log.",
-        "Appends MESSAGE envelope to target inbox through post_event()."
-      ],
-      "raises": [
-        "KeyError if target_id is absent."
-      ]
-    },
-    "send_message_to_window": {
-      "module": "tkvillage.messages",
-      "signature": "send_message_to_window(window_id, message, source_id=None)",
-      "description": "Send a MESSAGE envelope to a live window target.",
-      "returns": "The MESSAGE envelope."
-    },
-    "send_message_to_instance": {
-      "module": "tkvillage.messages",
-      "signature": "send_message_to_instance(instance_key, message, source_id=None)",
-      "description": "Send a MESSAGE envelope to a live window found by instance key.",
-      "returns": "The MESSAGE envelope.",
-      "raises": [
-        "KeyError if instance_key is absent."
-      ]
-    },
-    "send_message_to_kind": {
-      "module": "tkvillage.messages",
-      "signature": "send_message_to_kind(window_kind, message, source_id=None)",
-      "description": "Send a MESSAGE envelope to a singleton window kind.",
-      "returns": "The MESSAGE envelope."
-    },
-    "broadcast_message": {
-      "module": "tkvillage.messages",
-      "signature": "broadcast_message(message, source_id=None)",
-      "description": "Send a shallow copy of message to every current target.",
-      "returns": "None"
-    },
-    "route_effect": {
-      "module": "tkvillage.effects",
-      "signature": "route_effect(effect, source_id=None)",
-      "description": "Route one reducer/service effect through the runtime.",
-      "effect-types": {
-        "POST_EVENT": "Requires target_id and event; posts event.",
-        "SEND_MESSAGE": "Requires target_id and message; sends message.",
-        "SUMMON_WINDOW": "Requires window_kind; optional key and payload.",
-        "CLOSE_WINDOW": "Uses effect.window_id or source_id.",
-        "DESTROY_WINDOW": "Uses effect.window_id or source_id.",
-        "REQUEST_PROJECT": "Marks a window for projection using effect.window_id or source_id.",
-        "LOG": "Appends message to runtime_log.",
-        "SHOW_MESSAGE_BOX": "Calls tkinter.messagebox.showinfo()."
-      },
-      "returns": "Effect-specific result or None.",
-      "side-effects": [
-        "Always appends to rt.effect_log.",
-        "Unknown effects are logged unless rt.g[\"strict_effects\"] is true."
-      ],
-      "raises": [
-        "ValueError for unknown effects when strict_effects is true.",
-        "Effect-specific KeyError or tkinter exceptions."
-      ]
-    },
-    "route_effects": {
-      "module": "tkvillage.effects",
-      "signature": "route_effects(effects, source_id=None)",
-      "description": "Route each effect in effects. None or empty effects are allowed.",
-      "returns": "None"
-    },
-    "start_tick_loop": {
-      "module": "tkvillage.tick",
-      "signature": "start_tick_loop()",
-      "description": "Mark runtime running and schedule the next tick.",
-      "returns": "None",
-      "side-effects": [
-        "Sets rt.g[\"is_running\"] true.",
-        "Schedules root.after() when root exists."
-      ]
-    },
-    "stop_tick_loop": {
-      "module": "tkvillage.tick",
-      "signature": "stop_tick_loop()",
-      "description": "Stop future scheduled tick-loop callbacks.",
-      "returns": "None",
-      "side-effects": [
-        "Sets rt.g[\"is_running\"] false.",
-        "Cancels pending root.after callback when possible.",
-        "Sets rt.g[\"tick_after_id\"] to None."
-      ]
-    },
-    "tick_once": {
-      "module": "tkvillage.tick",
-      "signature": "tick_once()",
-      "description": "Run one runtime heartbeat.",
-      "returns": "New tick_count integer.",
-      "side-effects": [
-        "Increments rt.g[\"tick_count\"].",
-        "Drains service target inboxes.",
-        "Drains window event queues.",
-        "Routes effects.",
-        "Calls on_tick hooks.",
-        "Projects dirty windows.",
-        "Checks shutdown policy and may begin graceful shutdown.",
-        "Logs tick exceptions."
-      ],
-      "raises": [
-        "Re-raises tick exceptions when rt.g[\"test_mode\"] is true."
-      ]
-    },
-    "run_ticks": {
-      "module": "tkvillage.tick",
-      "signature": "run_ticks(count=1, update_tk=True)",
-      "description": "Run tick_once() repeatedly, optionally flushing Tk update calls after each tick.",
-      "returns": "None",
-      "parameters": {
-        "count": "Number of ticks to run.",
-        "update_tk": "When true and root exists, call update_idletasks() and update()."
+        "reason": "Optional JSON-friendly value for logs and rt.g[\"shutdown_reason\"]."
       }
     },
+    "shutdown": {
+      "signature": "shutdown()",
+      "authority": "Hard cleanup.",
+      "behavior": "Calls the shutdown handler once if configured, stops ticking, destroys live windows and root, and marks the runtime not running."
+    },
+    "register_window_kind": {
+      "signature": "register_window_kind(spec)",
+      "authority": "Window-kind registry.",
+      "spec": {
+        "window-kind": "str. Required stable name.",
+        "title": "str | None.",
+        "multiplicity": "\"singleton\" | \"per-key\" | \"free-instance\" | \"embedded\" | \"modal\".",
+        "create": "callable | None. create(record).",
+        "make-initial-state": "callable | None. make_initial_state(key=None, payload=None).",
+        "reduce-event": "callable | None. reduce_event(state, event) -> (new_state, effects).",
+        "project": "callable | None. project(record).",
+        "on-show": "callable | None. on_show(record).",
+        "on-close": "callable | None. on_close(record), return False to cancel close.",
+        "on-destroy": "callable | None. on_destroy(record).",
+        "on-tick": "callable | None. on_tick(record) -> effects | None.",
+        "debug-label": "str | None."
+      }
+    },
+    "summon_window": {
+      "signature": "summon_window(window_kind, key=None, payload=None)",
+      "authority": "Window creation/reuse."
+    },
+    "raise_window": {
+      "signature": "raise_window(window_id)",
+      "authority": "Live window focus."
+    },
+    "close_window": {
+      "signature": "close_window(window_id)",
+      "authority": "Close request."
+    },
+    "destroy_window": {
+      "signature": "destroy_window(window_id)",
+      "authority": "Live window destruction."
+    },
+    "get_window": {
+      "signature": "get_window(window_id)",
+      "authority": "Live window read."
+    },
+    "list_windows": {
+      "signature": "list_windows()",
+      "authority": "Live window read."
+    },
+    "post_event": {
+      "signature": "post_event(target_id, event)",
+      "authority": "Event queue write."
+    },
+    "post_event_to_window": {
+      "signature": "post_event_to_window(window_id, event)",
+      "authority": "Event queue write."
+    },
+    "post_event_to_instance": {
+      "signature": "post_event_to_instance(instance_key, event)",
+      "authority": "Event queue write."
+    },
+    "post_event_to_kind": {
+      "signature": "post_event_to_kind(window_kind, event)",
+      "authority": "Event queue write."
+    },
+    "broadcast_event": {
+      "signature": "broadcast_event(event)",
+      "authority": "Event queue write."
+    },
+    "register_service_target": {
+      "signature": "register_service_target(target_id, handler, state=None)",
+      "authority": "Target registry."
+    },
+    "send_message": {
+      "signature": "send_message(target_id, message, source_id=None)",
+      "authority": "Message routing."
+    },
+    "send_message_to_window": {
+      "signature": "send_message_to_window(window_id, message, source_id=None)",
+      "authority": "Message routing."
+    },
+    "send_message_to_instance": {
+      "signature": "send_message_to_instance(instance_key, message, source_id=None)",
+      "authority": "Message routing."
+    },
+    "send_message_to_kind": {
+      "signature": "send_message_to_kind(window_kind, message, source_id=None)",
+      "authority": "Message routing."
+    },
+    "broadcast_message": {
+      "signature": "broadcast_message(message, source_id=None)",
+      "authority": "Message routing."
+    },
+    "route_effect": {
+      "signature": "route_effect(effect, source_id=None)",
+      "authority": "Effect routing."
+    },
+    "route_effects": {
+      "signature": "route_effects(effects, source_id=None)",
+      "authority": "Effect routing."
+    },
+    "tick_once": {
+      "signature": "tick_once()",
+      "authority": "Runtime heartbeat."
+    },
+    "run_ticks": {
+      "signature": "run_ticks(count=1, update_tk=True)",
+      "authority": "Testing helper."
+    },
+    "start_tick_loop": {
+      "signature": "start_tick_loop()",
+      "authority": "Tick scheduling."
+    },
+    "stop_tick_loop": {
+      "signature": "stop_tick_loop()",
+      "authority": "Tick scheduling."
+    },
     "toggle_debug": {
-      "module": "tkvillage.debug",
       "signature": "toggle_debug()",
-      "description": "Toggle debug mode. When enabling, summon the runtime dashboard.",
-      "returns": "Debug dashboard record when enabling; false when disabling.",
-      "side-effects": [
-        "Flips rt.debug[\"enabled\"].",
-        "May summon tkvillage-debug-dashboard."
-      ]
+      "authority": "Debug UI."
     },
     "get_debug_snapshot": {
-      "module": "tkvillage.debug",
       "signature": "get_debug_snapshot(selected_window_id=None)",
-      "description": "Build a JSON-friendly runtime debug snapshot.",
-      "parameters": {
-        "selected_window_id": "Optional live window id whose state should be included as selected_window_state."
-      },
-      "returns": "Debug snapshot dictionary.",
-      "side-effects": [
-        "Stores snapshot in rt.debug[\"last_snapshot\"]."
-      ]
+      "authority": "Debug inspection."
     },
     "copy_debug_snapshot": {
-      "module": "tkvillage.debug",
       "signature": "copy_debug_snapshot(selected_window_id=None)",
-      "description": "Create a debug snapshot as indented JSON text and copy it to the Tk clipboard when root exists.",
-      "returns": "Snapshot JSON text.",
-      "side-effects": [
-        "May write to Tk clipboard.",
-        "Updates rt.debug[\"last_snapshot\"]."
-      ]
+      "authority": "Debug export."
     }
-  },
-  "additional-modules": {
-    "tkvillage.testing.run_until": {
-      "signature": "run_until(predicate, timeout_ms=1000, max_ticks=1000)",
-      "description": "Testing helper not re-exported from top-level tkvillage. Advances ticks until predicate is true, timeout expires, or max_ticks is reached.",
-      "returns": "Boolean final predicate result."
-    },
-    "tkvillage.cli.main": {
-      "signature": "main(argv=None)",
-      "description": "Console entrypoint for minimal TkVillage CLI.",
-      "commands": {
-        "run [entrypoint]": "Run optional Python entrypoint then enter TkVillage mainloop.",
-        "config-list": "Print JSON config list.",
-        "config-get <name>": "Print one config value.",
-        "config-set <name> <value>": "Set and persist one config value.",
-        "debug-snapshot": "Print debug snapshot JSON."
-      },
-      "returns": "Integer process-style exit code."
-    }
-  },
-  "callback-contracts": {
-    "make_initial_state": {
-      "signature": "make_initial_state(key=None, payload=None)",
-      "returns": "JSON-friendly state dictionary.",
-      "called-by": "realize_window()"
-    },
-    "create": {
-      "signature": "create(record)",
-      "returns": "Ignored.",
-      "called-by": "realize_window()",
-      "responsibility": "Build widgets in record[\"toplevel\"] and store important handles in record[\"widgets\"]."
-    },
-    "reduce_event": {
-      "signature": "reduce_event(state, event)",
-      "returns": "new_state, effects",
-      "called-by": "reduce_window_event() during tick_once()."
-    },
-    "project": {
-      "signature": "project(record)",
-      "returns": "Ignored.",
-      "called-by": "project_window().",
-      "responsibility": "Update widgets from record[\"state\"]."
-    },
-    "on_show": {
-      "signature": "on_show(record)",
-      "returns": "Ignored.",
-      "called-by": "raise_window()."
-    },
-    "on_close": {
-      "signature": "on_close(record)",
-      "returns": "False to cancel close; any other value allows close.",
-      "called-by": "close_window()."
-    },
-    "on_destroy": {
-      "signature": "on_destroy(record)",
-      "returns": "Ignored.",
-      "called-by": "destroy_window()."
-    },
-    "on_tick": {
-      "signature": "on_tick(record)",
-      "returns": "Effects list or None.",
-      "called-by": "tick_once()."
-    },
-    "service-handler": {
-      "signature": "handler(target, event)",
-      "returns": "Effects list or None.",
-      "called-by": "tick_once() for non-window targets."
-    }
-  },
-  "record-shapes": {
-    "event": {
-      "minimum": {
-        "type": "EVENT_NAME"
-      },
-      "notes": [
-        "Events should be JSON-friendly.",
-        "Use stable symbolic type names."
-      ]
-    },
-    "effect": {
-      "minimum": {
-        "type": "EFFECT_NAME"
-      },
-      "notes": [
-        "Effect fields depend on type.",
-        "Unknown effects are logged unless strict_effects is true."
-      ]
-    },
-    "window-record": "See docs/raw/0015__data-dictionary_app.json.",
-    "target-record": "See docs/raw/0015__data-dictionary_app.json."
-  },
-  "version-notes": {
-    "current-limitations": [
-      "embedded and modal window policies are not implemented.",
-      "worker_records is reserved but no worker API is currently public.",
-      "The CLI declares a runtime before running an entrypoint; entrypoints that call declare_app() will reset that runtime.",
-      "The current top-level API does not re-export testing.run_until."
-    ]
   }
 }

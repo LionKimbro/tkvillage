@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>lionscliapp Setup - TkVillage</title>
+  <link rel="stylesheet" href="../assets/manual.css">
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <a class="brand" href="../index.html"><strong>TkVillage</strong><span>Human manual</span></a>
+      <nav>
+        <div class="nav-group"><h2>Start</h2><a href="../index.html">Home</a><a href="index.html">Tutorial</a><a href="quick-start.html">Quick Start</a><a href="lionscliapp-setup.html">lionscliapp Setup</a><a href="counter-window.html">Counter Window</a><a href="shutdown-config.html">Shutdown and Hosting</a><a href="testing-debugging.html">Testing and Debugging</a></div>
+        <div class="nav-group"><h2>Mental Model</h2><a href="../mental-model/overview.html">Overview</a><a href="../mental-model/window-kinds.html">Window Kinds</a><a href="../mental-model/windows.html">Windows</a><a href="../mental-model/identifiers-and-targets.html">Identifiers and Targets</a><a href="../mental-model/events-effects.html">Events and Effects</a><a href="../mental-model/tick-loop.html">Tick Loop</a><a href="../mental-model/runtime-state.html">Runtime State</a><a href="../mental-model/shutdown.html">Shutdown</a></div>
+        <div class="nav-group"><h2>Functions</h2><a href="../functions/all-functions.html">All Functions</a><a href="../functions/window-kind-functions.html">Window-Kind Functions</a><a href="../functions/windows-functions.html">Window Functions</a><a href="../functions/events-messages-functions.html">Events and Messages</a><a href="../functions/hosting-functions.html">Hosting Functions</a><a href="../functions/runtime-functions.html">Runtime Functions</a><a href="../functions/effects-ticks-debug-functions.html">Effects, Ticks, Debug</a></div>
+      </nav>
+    </aside>
+    <main class="content">
+      <section class="hero">
+        <h1>lionscliapp Setup</h1>
+        <p>An alternate way to start a TkVillage app: lionscliapp hosts the command-line application, and TkVillage runs the GUI.</p>
+      </section>
+
+      <div class="callout">
+        You do not need lionscliapp to use TkVillage. The Quick Start path is enough for ordinary standalone Tkinter apps. Use this page when you want to use TkVillage with lionscliapp.  <a href="https://github.com/LionKimbro/lionscliapp">lionscliapp</a> is framework for building small (mostly) command-line tools.  It provides a project folder, configurable data that can also be persisted, command discovery and execution.
+      </div>
+
+      <h2>1. Choose This Startup Path Intentionally</h2>
+      <p>In standalone mode, TkVillage can declare its own project directory and start with <code>village.run()</code>. In lionscliapp-hosted mode, your the TkVillage code's main routine runs through <code>app.main()</code>.</p>
+      <pre><code># Standalone shape:
+village.declare_app({...})
+village.summon_window("main")
+village.run()
+
+# lionscliapp-hosted shape:
+app.declare_app(...)
+app.declare_projectdir(...)
+village.declare_app({"lionscliapp": True, ...})
+app.declare_cmd("", main_command)
+app.main()</code></pre>
+
+      <h2>2. Let lionscliapp Own the Project Directory</h2>
+      <p>The tkvillage project folder sits within lionscliapp's project folder. Its existence is ensured once tkvillage.ensure_ready() is called at runtime.</p>
+
+    <pre><code>def main_command():
+    village.ensure_ready()  # This line creates the tkvillage/ project folder.
+    register_windows()
+    village.summon_window("main")
+    village.run()</code></pre>
+
+      <h2>3. Declare lionscliapp Normally</h2>
+      <pre><code>import lionscliapp as app
+import tkvillage as village
+
+app.declare_app("myapp", "1.0")
+app.declare_projectdir(".myapp")</code></pre>
+
+      <h2>4. Declare TkVillage in Hosted Mode</h2>
+      <p>Use one TkVillage declaration dictionary. In hosted mode, omit <code>project-dir-name</code>; lionscliapp supplies the host project directory later.</p>
+      <pre><code>village.declare_app({
+    "name": "myapp",
+    "lionscliapp": True,  # <----
+    "shutdown-policy": "on-window-close",
+    "shutdown-window-kind": "main",
+    "on-shutdown": None,
+})</code></pre>
+
+      <h2>5. Ensure Readiness Inside Commands</h2>
+      <p>Call <code>village.ensure_ready()</code> at the top of commands that use TkVillage. At that point, lionscliapp has entered runtime and TkVillage can ask lionscliapp for the resolved project root.</p>
+      <pre><code>def main_command():
+    village.ensure_ready()
+    register_windows()
+    village.summon_window("main")
+    village.run()
+
+app.declare_cmd("", main_command)
+app.main()</code></pre>
+
+      <h2>6. Resulting Layout</h2>
+      <pre><code>&lt;execroot&gt;/
+  &lt;project-dir&gt;/
+    config.json
+    tkvillage/</code></pre>
+      <p>Application configuration remains with lionscliapp. TkVillage-specific runtime files belong under the <code>tkvillage/</code> subdirectory.</p>
+
+      <h2>7. Avoid These Moves</h2>
+      <ul>
+        <li>Do not call <code>ensure_ready()</code> during module import.</li>
+        <li>Do not call <code>ensure_ready()</code> during declaration.</li>
+      </ul>
+
+      <h2>Next</h2>
+      <p>Continue with <a href="counter-window.html">Counter Window</a> to register and summon an actual Toplevel.</p>
+    </main>
+  </div>
+  <script src="../assets/nav.js"></script>
+</body>
+</html>

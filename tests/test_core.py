@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import sys
+import types
+
 import pytest
 
 import tkvillage as village
@@ -259,7 +262,7 @@ def test_service_target_receives_queued_input(tmp_path):
     assert rt.targets["svc"]["state"]["handled"] is True
 
 
-def test_config_declares_coerces_and_persists(tmp_path):
+def test_standalone_ensure_ready_creates_project_dir(tmp_path):
     village.declare_app(
         {
             "name": "test-tkvillage",
@@ -272,29 +275,81 @@ def test_config_declares_coerces_and_persists(tmp_path):
             "on-shutdown": None,
         }
     )
-    village.declare_config(
-        {"name": "ui.scale", "default": 1, "type": "int", "description": "UI scale"}
-    )
-    village.set_config("ui.scale", "3")
+
+    project_dir = (tmp_path / ".test-tkvillage").resolve()
+    assert rt.g["project_dir"] == project_dir
+    assert rt.g["host_project_dir"] == project_dir
+    assert rt.g["is_ready"] is False
+    assert not project_dir.exists()
+
+    ready = village.ensure_ready()
+
+    assert ready is rt.g
+    assert rt.g["is_ready"] is True
+    assert project_dir.is_dir()
+
+
+def test_lionscliapp_mode_defers_project_dir_until_ready(tmp_path, monkeypatch):
+    host_project_dir = tmp_path / ".lionapp"
+
+    paths_module = types.ModuleType("lionscliapp.paths")
+
+    def get_project_root():
+        return host_project_dir
+
+    paths_module.get_project_root = get_project_root
+    package_module = types.ModuleType("lionscliapp")
+    monkeypatch.setitem(sys.modules, "lionscliapp", package_module)
+    monkeypatch.setitem(sys.modules, "lionscliapp.paths", paths_module)
 
     village.declare_app(
         {
             "name": "test-tkvillage",
-            "project-dir-name": ".test-tkvillage",
-            "project-root": tmp_path,
+            "lionscliapp": True,
             "test-mode": True,
-            "create-root": False,
             "shutdown-policy": "explicit",
             "shutdown-window-kind": None,
             "on-shutdown": None,
         }
     )
-    village.declare_config(
-        {"name": "ui.scale", "default": 1, "type": "int", "description": "UI scale"}
-    )
-    village.load_config()
 
-    assert village.get_config("ui.scale") == 3
+    assert rt.g["root"] is None
+    assert rt.g["project_dir"] is None
+    assert rt.g["host_project_dir"] is None
+
+    ready = village.ensure_ready()
+
+    assert ready is rt.g
+    assert rt.g["host_project_dir"] == host_project_dir
+    assert rt.g["project_dir"] == host_project_dir / "tkvillage"
+    assert rt.g["project_dir"].is_dir()
+
+
+def test_declare_app_requires_project_dir_unless_lionscliapp(tmp_path):
+    with pytest.raises(ValueError):
+        village.declare_app(
+            {
+                "name": "test-tkvillage",
+                "create-root": False,
+                "shutdown-policy": "explicit",
+                "shutdown-window-kind": None,
+                "on-shutdown": None,
+            }
+        )
+
+    village.declare_app(
+        {
+            "name": "test-tkvillage",
+            "lionscliapp": True,
+            "test-mode": True,
+            "shutdown-policy": "explicit",
+            "shutdown-window-kind": None,
+            "on-shutdown": None,
+        }
+    )
+
+    assert rt.g["lionscliapp"] is True
+    assert rt.g["project_dir"] is None
 
 
 def test_debug_snapshot_is_json_friendly(tmp_path):

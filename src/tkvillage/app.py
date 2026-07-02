@@ -2,16 +2,15 @@ from __future__ import annotations
 
 import time
 import warnings
+from pathlib import Path
 
-from .project_dir import resolve_project_dir
+from .project_dir import ensure_lionscliapp_tkvillage_dir, resolve_project_dir_path
 
 
 DEFAULT_TICK_INTERVAL_MS = 50
 
 
 g = {}
-config_declarations = {}
-config_values = {}
 window_kinds = {}
 windows = {}
 windows_by_instance_key = {}
@@ -40,7 +39,12 @@ def reset_app():
         {
             "name": "tkvillage",
             "root": None,
+            "host_project_dir": None,
             "project_dir": None,
+            "project_dir_name": None,
+            "project_root": None,
+            "lionscliapp": False,
+            "is_ready": False,
             "is_running": False,
             "test_mode": False,
             "strict_effects": False,
@@ -60,8 +64,6 @@ def reset_app():
             "shutdown_window_kind_seen": False,
         }
     )
-    config_declarations.clear()
-    config_values.clear()
     window_kinds.clear()
     windows.clear()
     windows_by_instance_key.clear()
@@ -82,25 +84,25 @@ def declare_app(spec):
     """Declare and initialize the runtime from one visible application spec."""
     validate_app_spec(spec)
     reset_app()
+    g["lionscliapp"] = bool(spec.get("lionscliapp", False))
     set_runtime_identity(
         spec["name"],
         spec.get("tick-interval-ms", DEFAULT_TICK_INTERVAL_MS),
         spec.get("test-mode", False),
     )
-    g["project_dir"] = resolve_project_dir(spec["project-dir-name"], spec.get("project-root"))
+    configure_project_dir(spec)
     g["shutdown_policy"] = spec["shutdown-policy"]
     g["shutdown_window_kind"] = spec.get("shutdown-window-kind")
     g["shutdown_handler"] = spec.get("on-shutdown")
 
-    if spec.get("create-root", True):
+    create_root = spec.get("create-root", not g["lionscliapp"])
+    if create_root:
         from .root import ensure_root
 
         ensure_root()
 
-    from .config import load_config
     from .debug import install_debug_shortcut, register_debug_windows
 
-    load_config()
     register_debug_windows()
     if g["root"] is not None:
         install_debug_shortcut()
@@ -137,10 +139,12 @@ def create_app(
 
 
 def validate_app_spec(spec):
-    required = ["name", "project-dir-name", "shutdown-policy"]
+    required = ["name", "shutdown-policy"]
     for key in required:
         if key not in spec:
             raise ValueError(f"declare_app spec requires {key!r}")
+    if not spec.get("lionscliapp") and "project-dir" not in spec and "project-dir-name" not in spec:
+        raise ValueError("declare_app spec requires 'project-dir-name' unless lionscliapp is true")
     policy = spec["shutdown-policy"]
     if policy not in {"on-window-close", "on-last-window-close", "explicit"}:
         raise ValueError(f"Unknown shutdown-policy: {policy}")
@@ -149,6 +153,39 @@ def validate_app_spec(spec):
     handler = spec.get("on-shutdown")
     if handler is not None and not callable(handler):
         raise ValueError("on-shutdown must be callable or None")
+
+
+def configure_project_dir(spec):
+    if g["lionscliapp"]:
+        g["project_dir_name"] = "tkvillage"
+        return
+    if "project-dir" in spec:
+        project_dir = Path(spec["project-dir"]).expanduser().resolve()
+    else:
+        project_dir = resolve_project_dir_path(spec["project-dir-name"], spec.get("project-root"))
+    g["host_project_dir"] = project_dir
+    g["project_dir"] = project_dir
+    g["project_dir_name"] = project_dir.name
+    g["project_root"] = project_dir.parent
+
+
+def ensure_ready():
+    if g["is_ready"]:
+        return g
+    if g["lionscliapp"]:
+        host_project_dir, project_dir = ensure_lionscliapp_tkvillage_dir()
+        g["host_project_dir"] = host_project_dir
+        g["project_dir"] = project_dir
+    else:
+        if g["project_dir"] is None:
+            g["project_dir"] = resolve_project_dir_path(
+                g.get("project_dir_name") or ".tkvillage",
+                g.get("project_root"),
+            )
+            g["host_project_dir"] = g["project_dir"]
+        g["project_dir"].mkdir(parents=True, exist_ok=True)
+    g["is_ready"] = True
+    return g
 
 
 def set_runtime_identity(new_name, new_tick_interval_ms, new_test_mode):
@@ -232,6 +269,7 @@ def run():
     from .root import ensure_root
     from .tick import start_tick_loop
 
+    ensure_ready()
     tk_root = ensure_root()
     start_tick_loop()
     tk_root.mainloop()

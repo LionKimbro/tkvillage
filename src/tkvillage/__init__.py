@@ -1,6 +1,5 @@
 from . import app as rt
-from .app import create_app, declare_app, request_shutdown, reset_app, run, shutdown
-from .config import declare_config, get_config, list_config, load_config, save_config, set_config
+from .app import create_app, declare_app, ensure_ready, request_shutdown, reset_app, run, shutdown
 from .debug import copy_debug_snapshot, get_debug_snapshot, toggle_debug
 from .effects import route_effect, route_effects
 from .events import (
@@ -36,14 +35,11 @@ __all__ = [
     "copy_debug_snapshot",
     "create_app",
     "declare_app",
-    "declare_config",
     "destroy_window",
-    "get_config",
+    "ensure_ready",
     "get_debug_snapshot",
     "get_window",
-    "list_config",
     "list_windows",
-    "load_config",
     "post_event",
     "post_event_to_instance",
     "post_event_to_kind",
@@ -58,12 +54,10 @@ __all__ = [
     "route_effects",
     "run",
     "run_ticks",
-    "save_config",
     "send_message",
     "send_message_to_instance",
     "send_message_to_kind",
     "send_message_to_window",
-    "set_config",
     "shutdown",
     "start_tick_loop",
     "stop_tick_loop",
