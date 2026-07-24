@@ -967,6 +967,40 @@
       "note": "",
       "zoom_min": 0.1306015316873082,
       "zoom_max": 0.5224061267492328
+    },
+    {
+      "id": "n64",
+      "kind": "rect",
+      "x": 2943.97045844283,
+      "y": 4257.155245134473,
+      "w": 429.4512150381666,
+      "h": 307.34391236391934,
+      "angle": 0.0,
+      "fill": "#ff8000",
+      "title": "Process Notes (copy)",
+      "hook": "",
+      "tags": [],
+      "url": "",
+      "note": "\nDefine the Following:\n\n* App -- title, name, description, project folder, ...\n* Project Folder structure\n* Configuration Data -- configuration options, titles, identifiers, types, defaults, storage location, ...\n* Window Declaration & Invocation -- how you declare a window, how you create a window\n* Inter-Module Communications System -- what model defines communication, how messages are delivered, ...\n* Run-time Core Loop",
+      "zoom_min": 0.0,
+      "zoom_max": 999999.0
+    },
+    {
+      "id": "n65",
+      "kind": "text",
+      "x": 2947.37074690564,
+      "y": 4058.022822511729,
+      "w": 180.0,
+      "h": 40.0,
+      "angle": 0.0,
+      "fill": "#f8fafc",
+      "title": "PROCESS NOTES",
+      "hook": "",
+      "tags": [],
+      "url": "",
+      "note": "",
+      "zoom_min": 0.16553354968968467,
+      "zoom_max": 0.6621341987587387
     }
   ],
   "camera": {
@@ -974,5 +1008,5 @@
     "ox": 2.240548748829724,
     "oy": -252.19051525031284
   },
-  "next_id": 64
+  "next_id": 66
 }

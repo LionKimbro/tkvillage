@@ -49,8 +49,124 @@
     <main class="content">
       <section class="hero">
         <h1>TkVillage</h1>
-        <p>TkVillage is a small, inspectable runtime for modular Tkinter apps: a hidden root, summonable Toplevel windows, reducer-owned state, queued semantic events, explicit effects, and a periodic tick loop.</p>
+        <p>TkVillage is a small runtime for building modular, multi-window Tkinter applications. It creates the hidden Tk root, manages visible Toplevel windows, runs a periodic tick loop, and gives each window a predictable event, reducer, effect, and projection flow.</p>
       </section>
+
+      <section class="intro-panel">
+        <h2>TkVillage In One Minute</h2>
+        <p>TkVillage helps keep Tkinter programs from turning into scattered widget callbacks and shared-variable mutation. You declare the app, register reusable window kinds, summon live windows, post semantic events from widgets, update state through reducers, and let projections update the interface from that state.</p>
+        <ol class="compact-steps">
+          <li>Declare the app with <code>declare_app({...})</code>.</li>
+          <li>Register window kinds with creation, reducer, and projection functions.</li>
+          <li>Summon windows. TkVillage creates, raises, or tracks them according to policy.</li>
+          <li>Post semantic events from widget callbacks.</li>
+          <li>Let reducers update window state and request effects.</li>
+          <li>Let projections copy state into visible widgets.</li>
+          <li>Let the tick loop coordinate queued work and shutdown checks.</li>
+        </ol>
+      </section>
+
+      <div class="split">
+        <section>
+          <h2>TkVillage Owns</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Runtime responsibility</th>
+                <th>What that means</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Hidden Tk root</td>
+                <td>TkVillage creates and manages the process-level Tk root.</td>
+              </tr>
+              <tr>
+                <td>Window registry</td>
+                <td>Window kinds and live windows are tracked in runtime dictionaries.</td>
+              </tr>
+              <tr>
+                <td>Queues and tick loop</td>
+                <td>Events, messages, effects, projections, and shutdown checks run through periodic ticks.</td>
+              </tr>
+              <tr>
+                <td>Lifecycle coordination</td>
+                <td>Window close behavior and app shutdown follow the declared policy.</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+        <section>
+          <h2>You Provide</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>User code</th>
+                <th>What it does</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>App declaration</td>
+                <td>Names the app, selects hosting mode, and declares shutdown behavior.</td>
+              </tr>
+              <tr>
+                <td>Window kind declarations</td>
+                <td>Describe reusable kinds of windows and their instance policy.</td>
+              </tr>
+              <tr>
+                <td>Create functions</td>
+                <td>Build the widgets for a live Toplevel window.</td>
+              </tr>
+              <tr>
+                <td>Reducers and projections</td>
+                <td>Reducers update state; projections update widgets from state.</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+      </div>
+
+      <h2>Core Vocabulary</h2>
+      <table class="terms-table">
+        <thead>
+          <tr>
+            <th>Term</th>
+            <th>Plain meaning</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Window kind</td>
+            <td>A reusable definition for a type of window.</td>
+          </tr>
+          <tr>
+            <td>Window</td>
+            <td>A live Toplevel instance created from a window kind.</td>
+          </tr>
+          <tr>
+            <td>Event</td>
+            <td>A semantic dictionary saying that something happened.</td>
+          </tr>
+          <tr>
+            <td>Reducer</td>
+            <td>A function that updates state in response to an event.</td>
+          </tr>
+          <tr>
+            <td>Projection</td>
+            <td>A function that updates existing widgets from current state.</td>
+          </tr>
+          <tr>
+            <td>Target</td>
+            <td>A routable recipient, usually a window or service.</td>
+          </tr>
+          <tr>
+            <td>Tick</td>
+            <td>One runtime pass through queued events, effects, projection, and shutdown checks.</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>For the longer version, see the <a href="glossary.html">Glossary</a> and <a href="mental-model/overview.html">Mental Model Overview</a>.</p>
 
       <div class="grid">
         <article class="card">
@@ -77,11 +193,15 @@
 
       <h2>The Runtime Shape</h2>
       <div class="flow">
-        <div data-step="1">Declare the app with <code>declare_app({...})</code>.</div>
-        <div data-step="2">Register window kinds with creation, reducer, and projection functions.</div>
-        <div data-step="3">Summon windows. TkVillage creates or raises Toplevels according to the declared policy.</div>
-        <div data-step="4">Widget callbacks post semantic events instead of mutating app truth directly.</div>
-        <div data-step="5">Each tick drains queues, runs reducers, routes effects, calls hooks, projects dirty windows, and checks shutdown.</div>
+        <div data-step="1">A user action runs a Tkinter widget callback.</div>
+        <div data-step="2">The callback posts a semantic event, such as <code>{"type": "increment"}</code>.</div>
+        <div data-step="3">The next tick drains queued work and sends the event to the target window or service.</div>
+        <div data-step="4">A reducer updates state and may request explicit effects.</div>
+        <div data-step="5">Dirty windows are projected, effects are routed, and shutdown is checked.</div>
+      </div>
+
+      <div class="callout">
+        <strong>lionscliapp is optional.</strong> TkVillage can run standalone. When a program already uses <code>lionscliapp</code>, TkVillage can use its project-folder timing and keep TkVillage-specific files under that project folder.
       </div>
 
       <h2>Recommended Reading Order</h2>
